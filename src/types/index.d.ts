@@ -1,0 +1,13 @@
+import { Timestamp } from "@react-native-firebase/firestore";
+
+interface ProductTypes {
+  id: string;
+  product_name: string;
+  product_image: string;
+  product_invoice: string;
+  product_mrp: string;
+  last_updated_at: Timestamp | null;
+  category: string;
+}
+
+export { ProductTypes };
