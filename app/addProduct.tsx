@@ -18,7 +18,7 @@ import {
   uploadBytes,
 } from "@react-native-firebase/storage";
 import { Button, TextInput } from "react-native-paper";
-import { saveProduct, updateProduct } from "@/src/network";
+import { addCategory, saveProduct, updateProduct } from "@/src/network";
 import { getApp } from "@react-native-firebase/app";
 
 import {
@@ -37,6 +37,10 @@ import { generateImageUrl } from "@/components/GenerateImageUrl";
 import CustomImage from "@/components/CustomImage";
 import { selectionAsync } from "expo-haptics";
 import { MenuAction, MenuView } from "@react-native-menu/menu";
+import { SheetManager } from "react-native-actions-sheet";
+import CustomInput from "@/components/CustomInput";
+import CustomButton from "@/components/CustomButton";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const AddProductScreen = () => {
   const { colors } = useTheme();
@@ -60,7 +64,7 @@ const AddProductScreen = () => {
     product_mrp: "",
     product_invoice: "",
     last_updated_at: null,
-    category: "",
+    product_category: "",
   });
 
   useEffect(() => {
@@ -74,20 +78,7 @@ const AddProductScreen = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const productNameRef = useRef(null);
-  // Alert.prompt("Product Name", "Enter the name of the product:", [
-  //   {
-  //     text: "Cancel",
-  //     onPress: () => console.log("Cancel Pressed"),
-  //     style: "cancel",
-  //   },
-  //   {
-  //     text: "OK",
-  //     onPress: (name) => {
-  //       // setProductInfo((pre) => ({ ...pre, product_name: name }));
-  //       console.log({ name });
-  //     },
-  //   },
-  // ]);
+
   return (
     <>
       <Stack.Screen
@@ -101,38 +92,70 @@ const AddProductScreen = () => {
           { backgroundColor: colors.background, gap: 15, marginTop: 30 },
         ]}
       >
-        <Pressable
-          style={({ pressed }) => ({
-            alignItems: "center",
-            alignSelf: "center",
-            justifyContent: "center",
-            opacity: pressed ? 0.5 : 1,
-          })}
-          onPress={async () => {
+        <MenuItem
+          title="Select Image Source"
+          data={[
+            {
+              title: "Choose Image",
+              id: "choose_image",
+              image: Platform.select({
+                ios: "photo.on.rectangle",
+                android: "ic_gallery",
+              }),
+              imageColor: colors.text,
+            },
+            {
+              title: "Take Photo",
+              id: "take_photo",
+              image: Platform.select({
+                android: "ic_camera",
+                ios: "camera",
+              }),
+              imageColor: colors.text,
+            },
+          ]}
+          // style={({ pressed }) => ({
+          //   alignItems: "center",
+          //   alignSelf: "center",
+          //   justifyContent: "center",
+          //   opacity: pressed ? 0.5 : 1,
+          // })}
+          onValueSelect={async (val) => {
             try {
-              await ImagePicker.requestCameraPermissionsAsync();
+              if (val === "take_photo") {
+                await ImagePicker.requestCameraPermissionsAsync();
 
-              let result = await ImagePicker.launchCameraAsync({
-                cameraType: ImagePicker.CameraType.back,
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.5,
-              });
+                let result = await ImagePicker.launchCameraAsync({
+                  cameraType: ImagePicker.CameraType.back,
+                  allowsEditing: true,
+                  aspect: [1, 1],
+                  quality: 0.5,
+                });
 
-              if (!result.canceled) {
-                // @ts-ignore
-                productNameRef.current?.focus();
-                setProductInfo((pre) => ({
-                  ...pre,
-                  product_image: result.assets[0].uri,
-                }));
+                if (!result.canceled) {
+                  // @ts-ignore
+                  productNameRef.current?.focus();
+                  setProductInfo((pre) => ({
+                    ...pre,
+                    product_image: result.assets[0].uri,
+                  }));
 
-                await putFile(storageRef, result.assets[0].uri);
+                  await putFile(storageRef, result.assets[0].uri);
 
-                // setProductInfo((pre) => ({
-                //   ...pre,
-                //   product_image: url,
-                // }));
+                  // setProductInfo((pre) => ({
+                  //   ...pre,
+                  //   product_image: url,
+                  // }));
+                }
+              } else {
+                const preUploadedImage = await SheetManager.show(
+                  "uploaded-images-sheet"
+                );
+                if (preUploadedImage)
+                  setProductInfo((pre) => ({
+                    ...pre,
+                    product_image: preUploadedImage,
+                  }));
               }
             } catch (e) {
               console.log({ e });
@@ -144,6 +167,7 @@ const AddProductScreen = () => {
               source={{ uri: productInfo.product_image }}
               width={150}
               height={150}
+              style={{ alignSelf: "center" }}
               resizeMode={"contain"}
             />
           ) : (
@@ -155,6 +179,7 @@ const AddProductScreen = () => {
                 borderRadius: 10,
                 justifyContent: "center",
                 alignItems: "center",
+                alignSelf: "center",
               }}
             >
               <MaterialCommunityIcons
@@ -164,32 +189,21 @@ const AddProductScreen = () => {
               />
             </View>
           )}
-        </Pressable>
+        </MenuItem>
 
         <View style={{ gap: 15, paddingHorizontal: 15 }}>
-          <TextInput
+          <CustomInput
             ref={productNameRef}
-            mode="outlined"
             label={"Product Name"}
             placeholder="Product Name"
             value={productInfo.product_name}
             onChangeText={(name) =>
               setProductInfo((pre) => ({ ...pre, product_name: name }))
             }
-            theme={{
-              colors: {
-                primary: colors.primary,
-                background: colors.card,
-                onSurface: colors.text,
-                outline: "grey",
-                onSurfaceVariant: "grey",
-              },
-            }}
           />
 
           <View style={{ flexDirection: "row", gap: 15 }}>
-            <TextInput
-              mode="outlined"
+            <CustomInput
               label={"Invoice"}
               placeholder="Invoice"
               keyboardType="numeric"
@@ -201,39 +215,19 @@ const AddProductScreen = () => {
                 }))
               }
               style={{ flex: 1 }}
-              theme={{
-                colors: {
-                  primary: colors.primary,
-                  background: colors.card,
-                  onSurface: colors.text,
-                  outline: "grey",
-                  onSurfaceVariant: "grey",
-                },
-              }}
             />
-            <TextInput
-              mode="outlined"
+            <CustomInput
               label={"MRP"}
               placeholder="MRP"
               keyboardType="numeric"
               value={productInfo.product_mrp}
               onChangeText={(price) => {
-                // console.log(isNaN(Number(price)) ? 0 : Number(price));
                 setProductInfo((pre) => ({
                   ...pre,
                   product_mrp: price.replace(/\D/g, ""),
                 }));
               }}
               style={{ flex: 1, color: "white" }}
-              theme={{
-                colors: {
-                  primary: colors.primary,
-                  background: colors.card,
-                  onSurface: colors.text,
-                  outline: "grey",
-                  onSurfaceVariant: "grey",
-                },
-              }}
             />
           </View>
 
@@ -241,7 +235,7 @@ const AddProductScreen = () => {
             title="Select Category"
             data={[
               {
-                title: "Add New",
+                title: "add new",
                 id: "add",
                 imageColor: colors.primary,
 
@@ -249,77 +243,69 @@ const AddProductScreen = () => {
               },
               ...categories.map((cat) => ({ title: cat.key, id: cat.key })),
             ]}
-            onValueSelect={(value) => {
-              if (value === "add") {}
-              setProductInfo((pre) => ({ ...pre, category: value }));
+            onValueSelect={async (value) => {
+              if (value === "add") {
+                const val = await SheetManager.show("add-category-sheet");
+
+                if (val) {
+                  setProductInfo((pre) => ({ ...pre, product_category: val }));
+                  await addCategory(val);
+                }
+                return;
+              }
+              setProductInfo((pre) => ({ ...pre, product_category: value }));
             }}
           >
-            <TextInput
-              ref={productNameRef}
-              mode="outlined"
+            <CustomInput
               editable={false}
               label={"Category"}
               pointerEvents="none"
               placeholder="Category"
-              value={productInfo.category}
+              value={productInfo.product_category}
               onChangeText={(name) =>
                 setProductInfo((pre) => ({ ...pre, product_name: name }))
               }
-              theme={{
-                colors: {
-                  primary: colors.primary,
-                  background: colors.card,
-                  onSurface: colors.text,
-                  outline: "grey",
-                  onSurfaceVariant: "grey",
-                },
-              }}
             />
           </MenuItem>
 
-          <Button
+          <CustomButton
             loading={isLoading}
             onPress={async () => {
               try {
                 selectionAsync();
                 setIsLoading(true);
+                const isHttpsUrl = (str: string) => /^https:\/\//i.test(str);
+                const isURL = isHttpsUrl(productInfo.product_image);
                 let url = "";
-                if (productInfo.product_image) {
+                if (productInfo.product_image && !isURL) {
                   url = await getDownloadURL(storageRef);
                 }
                 if (params?.isEditing) {
                   await updateProduct(params.id, {
                     ...productInfo,
-                    product_image: url,
+                    product_image: isURL ? productInfo.product_image : url,
                     last_updated_at: Timestamp.now(),
                   });
-
+                  // router.p();
+                  router.dismissTo("/");
                   return;
                 }
 
                 await saveProduct({
                   ...productInfo,
-                  product_image: url,
+                  product_image: isURL ? productInfo.product_image : url,
                   last_updated_at: Timestamp.now(),
                 });
+                router.back();
               } catch (error) {
                 console.log({ error });
               } finally {
                 setIsLoading(false);
-                router.back();
               }
-            }}
-            mode="contained"
-            theme={{ colors: { primary: colors.primary } }}
-            style={{ borderRadius: 5, padding: 5 }}
-            labelStyle={{
-              flex: 1,
-              fontWeight: "bold",
-              textTransform: "uppercase",
             }}
           >
             {params?.isEditing ? "update" : "save"}
-          </Button>
+          </CustomButton>
         </View>
       </View>
     </>

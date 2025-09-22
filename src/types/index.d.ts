@@ -7,7 +7,7 @@ interface ProductTypes {
   product_invoice: string;
   product_mrp: string;
   last_updated_at: Timestamp | null;
-  category: string;
+  product_category: string;
 }
 
 export { ProductTypes };

@@ -44,45 +44,177 @@ export const ProductRenderItem = memo(
     const { height, width } = useWindowDimensions();
 
     const PADDING = 15;
-    const GAP = 25;
-    const IMAGE_SIZE = (width - PADDING * 2 - GAP) / 2;
+    const GAP = 0;
+    const IMAGE_SIZE = (width - PADDING * 2 - 10 - 10 - 5) / 2;
     // const IMAGE_SIZE = (width - PADDING * 2) * 0.2;
 
     // return (
-    //   <TouchableOpacity
+    //   <View
     //     style={{
-    //       flexDirection: "row",
-    //       minHeight: IMAGE_SIZE,
-    //       alignItems: "center",
-    //       backgroundColor: colors.card,
-    //       gap: 10,
+    //       // flex: 1,
+    //       // marginTop: 5,
+    //       // padding: 5,
+    //       // paddingLeft: index % 2 === 0 ? 0 : 5,
+    //       // paddingRight: index % 2 !== 0 ? 0 : 5,
+    //       backgroundColor: "blue",
     //     }}
     //   >
-    //     <View style={{}}>
+    //     <Card
+    //       style={{
+    //         // flex: 1,
+    //         width: IMAGE_SIZE,
+    //         // position: "absolute",
+    //         borderRadius: 10,
+    //         overflow: "hidden",
+    //         borderWidth: 1,
+    //         borderColor: colors.border,
+    //       }}
+    //       onLongPress={onLongPress}
+    //       onPress={() => {
+    //         if (isEditingMode) {
+    //           onPress?.(item.id);
+    //           return;
+    //         }
+    //         Haptics.selectionAsync();
+    //         router.navigate({
+    //           pathname: "/productDetails",
+    //           params: {
+    //             ...item,
+    //             last_updated_at: item.last_updated_at
+    //               ?.toDate()
+    //               .toLocaleString(),
+    //           },
+    //         });
+    //       }}
+    //       mode="contained"
+    //       theme={{
+    //         colors: {
+    //           surfaceVariant: colors.card,
+    //         },
+    //       }}
+    //     >
     //       {item.product_image && (
     //         <CustomImage
-    //           height={IMAGE_SIZE}
     //           width={IMAGE_SIZE}
+    //           height={IMAGE_SIZE * 0.6}
     //           source={{ uri: item.product_image }}
     //           resizeMode="cover"
-
     //         />
     //       )}
-    //     </View>
-    //     <View>
-    //       <Text variant="headlineSmall" style={{ color: colors.text }}>
-    //         {item.product_name}
-    //       </Text>
-    //       <Text variant="titleMedium" style={{ color: colors.text }}>
-    //         {formatCurrency(+item.product_invoice)} |{"  "}
-    //         {formatCurrency(+item.product_invoice)}
-    //       </Text>
-    //     </View>
-    //   </TouchableOpacity>
-    // );
 
+    //       <Card.Title
+    //         title={item.product_name}
+    //         titleNumberOfLines={2}
+    //         titleStyle={{
+    //           textAlign: "center",
+    //           color: colors.text,
+    //           fontWeight: "bold",
+    //         }}
+    //         // style={{ marginVertical: 0 }}
+    //       />
+
+    //       <Divider />
+    //       <View style={{ flexDirection: "row", paddingBottom: 15 }}>
+    //         <View
+    //           style={{
+    //             flex: 1,
+    //             justifyContent: "center",
+    //             alignItems: "center",
+    //           }}
+    //         >
+    //           <HelperText style={{ color: colors.text }} type="info">
+    //             Invoice
+    //           </HelperText>
+    //           <View
+    //             style={{
+    //               flex: 1,
+    //               justifyContent: "center",
+    //               alignItems: "center",
+    //             }}
+    //           >
+    //             <Text
+    //               style={{
+    //                 color: colors.text,
+    //                 fontWeight: "bold",
+    //                 textAlign: "center",
+    //               }}
+    //               variant="titleMedium"
+    //             >
+    //               {formatCurrency(+item.product_invoice)}
+    //             </Text>
+    //           </View>
+    //         </View>
+    //         <Divider
+    //           style={{ height: "100%", width: StyleSheet.hairlineWidth }}
+    //         />
+    //         <View
+    //           style={{
+    //             flex: 1,
+    //             justifyContent: "center",
+    //             alignItems: "center",
+    //           }}
+    //         >
+    //           <HelperText style={{ color: colors.text }} type="info">
+    //             MRP
+    //           </HelperText>
+
+    //           <View
+    //             style={{
+    //               flex: 1,
+    //               justifyContent: "center",
+    //               alignItems: "center",
+    //             }}
+    //           >
+    //             <Text
+    //               style={{
+    //                 color: colors.text,
+    //                 fontWeight: "bold",
+    //                 textAlign: "center",
+    //               }}
+    //               variant="titleMedium"
+    //             >
+    //               {formatCurrency(+item.product_mrp)}
+    //             </Text>
+    //           </View>
+    //         </View>
+    //       </View>
+    //       {isEditingMode && (
+    //         <View
+    //           pointerEvents="none"
+    //           style={[
+    //             StyleSheet.absoluteFillObject,
+    //             {
+    //               padding: 15,
+    //               alignItems: "flex-end",
+    //               backgroundColor: dark ? "#0006" : "#fff6",
+    //             },
+    //           ]}
+    //         >
+    //           <MaterialCommunityIcons
+    //             size={24}
+    //             color={colors.text}
+    //             name={
+    //               isSelected
+    //                 ? "checkbox-marked-circle"
+    //                 : "checkbox-blank-circle-outline"
+    //             }
+    //           />
+    //         </View>
+    //       )}
+    //     </Card>
+    //   </View>
+    // );
     return (
-      <View style={{ flex: 1, marginTop: 5, padding: 5 }}>
+      <View
+        style={{
+          flex: 1,
+          marginTop: 5,
+          padding: 5,
+          // paddingLeft: index % 2 === 0 ? 0 : 5,
+          // paddingRight: index % 2 !== 0 ? 0 : 5,
+          // backgroundColor: "blue",
+        }}
+      >
         <Card
           style={{
             flex: 1,

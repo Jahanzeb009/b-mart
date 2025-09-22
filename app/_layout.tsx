@@ -7,8 +7,10 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import "react-native-reanimated";
-
-import { useColorScheme } from "@/components/useColorScheme";
+import "@/src/sheets";
+import { SheetProvider } from "react-native-actions-sheet";
+import { useColorScheme } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -38,12 +40,12 @@ function RootLayoutNav() {
     ...DarkTheme,
     colors: {
       ...DarkTheme.colors,
-      background: "rgb(10, 10, 10)",
-      border: "rgb(44, 44, 46)",
-      card: "rgb(28, 28, 30)",
-      notification: "rgb(255, 69, 58)",
-      primary: "rgb(64, 156, 255)",
-      text: "rgb(229, 229, 231)",
+      background: "#0a0a0a",
+      border: "#2c2c2e",
+      card: "#1c1c1e",
+      notification: "#ff453a",
+      primary: "#409cff",
+      text: "#e5e5e7",
     },
   };
 
@@ -51,30 +53,39 @@ function RootLayoutNav() {
     ...DefaultTheme,
     colors: {
       ...DefaultTheme.colors,
-      background: "#f2f2f2ff",
-      border: "#d8d8d8ff",
-      card: "#ffffffff",
-      notification: "#ff3b30ff",
-      primary: "#007affff",
-      text: "#1c1c1eff",
+      background: "#f2f2f2",
+      border: "#d8d8d8",
+      card: "#ffffff",
+      notification: "#ff3b30",
+      primary: "#007aff",
+      text: "#1c1c1e",
     },
   };
+
   return (
-    <ThemeProvider value={colorScheme === "dark" ? Dark : Light}>
-      <Stack>
-        <Stack.Screen
-          name="index"
-          options={{
-            title: "",
-            headerTransparent: true,
-          }}
-        />
-        <Stack.Screen name="addProduct" options={{ presentation: "modal" }} />
-        <Stack.Screen
-          name="productDetails"
-          options={{ presentation: "modal" }}
-        />
-      </Stack>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "black" }}>
+      <ThemeProvider value={colorScheme === "dark" ? Dark : Light}>
+        <SheetProvider>
+          <Stack>
+            <Stack.Screen
+              name="index"
+              options={{
+                title: "B Mart",
+                headerShadowVisible: false,
+                // headerTransparent: true,
+              }}
+            />
+            <Stack.Screen
+              name="addProduct"
+              //  options={{ presentation: "containedModal" }}
+            />
+            <Stack.Screen
+              name="productDetails"
+              options={{ presentation: "modal" }}
+            />
+          </Stack>
+        </SheetProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

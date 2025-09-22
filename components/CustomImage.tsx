@@ -16,11 +16,13 @@ const CustomImage = ({
   height,
   resizeMode,
   source,
+  style,
 }: {
   source: ImageSourcePropType;
   width: DimensionValue;
   height: DimensionValue;
   resizeMode: ImageContentFit;
+  style?: View["props"]["style"];
 }) => {
   const [isLoadingImage, setIsLoadingImage] = useState(false);
 
@@ -28,13 +30,16 @@ const CustomImage = ({
 
   return (
     <View
-      style={{
-        width,
-        height,
-        borderRadius: 10,
-        overflow: "hidden",
-        backgroundColor: colors.card,
-      }}
+      style={[
+        {
+          width,
+          height,
+          borderRadius: 10,
+          overflow: "hidden",
+          backgroundColor: colors.card,
+        },
+        style,
+      ]}
     >
       <Image
         source={source}

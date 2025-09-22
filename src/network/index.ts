@@ -4,6 +4,7 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  onSnapshot,
   setDoc,
   updateDoc,
 } from "@react-native-firebase/firestore";
@@ -13,6 +14,16 @@ import { ProductTypes } from "../types";
 const COLLECTIONS = {
   products: "products",
   categories: "categories",
+};
+const addCategory = async (key: string) => {
+  try {
+    const ref = collection(db, COLLECTIONS.categories);
+    await addDoc(ref, {
+      key,
+    });
+  } catch (e) {
+    console.log("Error adding category", e);
+  }
 };
 
 const getCategories = async () => {
@@ -41,6 +52,29 @@ const deleteProducts = async (products: Set<string>) => {
     console.log({ error });
     return false;
   }
+};
+
+const getProductsRealTime = (cb: (products: ProductTypes[]) => void) => {
+  const sub = onSnapshot(collection(db, COLLECTIONS.products), (snapshot) => {
+    const products = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    cb?.(products as ProductTypes[]);
+  });
+
+  return sub;
+};
+const getCategoriesRealTime = (cb: (products: ProductTypes[]) => void) => {
+  const sub = onSnapshot(collection(db, COLLECTIONS.categories), (snapshot) => {
+    const products = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    cb?.(products as ProductTypes[]);
+  });
+
+  return sub;
 };
 
 const getProductList = async () => {
@@ -103,4 +137,7 @@ export {
   saveProduct,
   deleteProducts,
   getCategories,
+  addCategory,
+  getProductsRealTime,
+  getCategoriesRealTime,
 };
