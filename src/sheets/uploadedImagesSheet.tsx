@@ -7,12 +7,14 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import ActionSheet, {
+  FlatList,
+  ScrollView,
   SheetManager,
   SheetProps,
 } from "react-native-actions-sheet";
 import { useTheme } from "@react-navigation/native";
-import { listAll, ref } from "@react-native-firebase/storage";
-import { storage } from "../network/firebase";
+// import { listAll, ref } from "@react-native-firebase/storage";
+// import { storage } from "../network/firebase";
 import CustomImage from "@/components/CustomImage";
 import { FlashList } from "@shopify/flash-list";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -20,15 +22,15 @@ import { HelperText, IconButton } from "react-native-paper";
 
 const getAllImageUrls = async (path = "images/products") => {
   try {
-    const reference = ref(storage, path);
-    const result = await listAll(reference);
+    // const reference = ref(storage, path);
+    // const result = await listAll(reference);
 
-    // Get download URLs for each item
-    const urls = await Promise.all(
-      result.items.map((itemRef) => itemRef.getDownloadURL())
-    );
+    // // Get download URLs for each item
+    // const urls = await Promise.all(
+    //   result.items.map((itemRef) => itemRef.getDownloadURL())
+    // );
 
-    return urls; // Array of URLs
+    // return urls; // Array of URLs
   } catch (error) {
     console.error("Error fetching images:", error);
     return [];
@@ -81,15 +83,6 @@ const UploadedImagesSheet = (props: SheetProps<"uploaded-images-sheet">) => {
 
   useEffect(() => {
     getImages();
-    // getAllImageUrls()
-    //   .then((urls) => {
-    //     setImages(urls);
-    //     AsyncStorage.setItemAsync(
-    //       "images",
-    //       JSON.stringify({ last_updated_at: Date.now(), data: urls })
-    //     );
-    //   })
-    //   .finally(() => setIsLoading(false));
   }, []);
 
   let { width } = useWindowDimensions();
@@ -101,36 +94,38 @@ const UploadedImagesSheet = (props: SheetProps<"uploaded-images-sheet">) => {
   const last_updated_at = new Date(
     images.last_updated_at ?? Date.now()
   ).toLocaleString();
-
+  console.log({ images });
   return (
     <ActionSheet
       gestureEnabled
       id={props.sheetId}
+      snapPoints={[70, 100]}
       containerStyle={{
         backgroundColor: colors.border,
         paddingTop: 15,
         borderTopRightRadius: 30,
         borderTopLeftRadius: 30,
-        minHeight: "40%",
+        minHeight: "60%",
       }}
       indicatorStyle={{ backgroundColor: colors.card }}
     >
-      <View style={{ minHeight: "100%" }}>
-        {isLoading && (
-          <View
-            style={{
-              height: "100%",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: 15,
-            }}
-          >
-            <ActivityIndicator size={"large"} color={colors.primary} />
-            <Text style={{ color: colors.text }}>Loading Images...</Text>
-          </View>
-        )}
-        <FlashList
-          data={images.data}
+      {isLoading && (
+        <View
+          style={{
+            height: "100%",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 15,
+          }}
+        >
+          <ActivityIndicator size={"large"} color={colors.primary} />
+          <Text style={{ color: colors.text }}>Loading Images...</Text>
+        </View>
+      )}
+
+      {images?.data && (
+        <FlatList
+          data={images?.data}
           numColumns={3}
           bounces={false}
           ListHeaderComponent={() => {
@@ -187,7 +182,8 @@ const UploadedImagesSheet = (props: SheetProps<"uploaded-images-sheet">) => {
             );
           }}
         />
-      </View>
+      )}
+      {/* </ScrollView> */}
     </ActionSheet>
   );
 };

@@ -15,6 +15,7 @@
   "dependencies": {
     "@d11/react-native-fast-image": "^8.12.0",
     "@expo/vector-icons": "^14.1.0",
+    "@legendapp/list": "^2.0.8",
     "@mindinventory/react-native-stagger-view": "^1.2.1",
     "@react-native-async-storage/async-storage": "2.1.2",
     "@react-native-firebase/app": "^23.3.1",
@@ -37,6 +38,7 @@
     "expo-status-bar": "~2.2.3",
     "expo-system-ui": "~5.0.11",
     "expo-web-browser": "~14.2.0",
+    "firebase": "^12.3.0",
     "fuse.js": "^7.1.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",

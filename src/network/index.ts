@@ -5,7 +5,6 @@ import {
   doc,
   getDocs,
   onSnapshot,
-  setDoc,
   updateDoc,
 } from "@react-native-firebase/firestore";
 import { db } from "./firebase";

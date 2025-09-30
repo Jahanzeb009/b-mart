@@ -5,7 +5,6 @@ import ActionSheet, {
   SheetProps,
 } from "react-native-actions-sheet";
 import { useTheme } from "@react-navigation/native";
-import CustomButton from "@/components/CustomButton";
 import { Chip, Text } from "react-native-paper";
 import { selectionAsync } from "expo-haptics";
 
@@ -54,8 +53,6 @@ const ShowAllCategoriesSheet = (
                         ? colors.primary
                         : colors.background,
                   }}
-                  // theme={{ colors: { primary: colors.primary } }}
-                  // selectedColor=""
                   theme={{
                     roundness: 5,
                     colors: {

@@ -7,8 +7,6 @@ registerSheet("add-category-sheet", AddCategorySheet);
 registerSheet("uploaded-images-sheet", UploadedImagesSheet);
 registerSheet("show-all-categories-sheet", ShowAllCategoriesSheet);
 
-// We extend some of the types here to give us great intellisense
-// across the app for all registered sheets.
 declare module "react-native-actions-sheet" {
   interface Sheets {
     "add-category-sheet": SheetDefinition<{

@@ -59,6 +59,8 @@ import Animated, {
   FadeOutUp,
   LinearTransition,
 } from "react-native-reanimated";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LegendList } from "@legendapp/list";
 
 const formatData = (
   data: (ProductTypes | null)[],
@@ -165,6 +167,8 @@ const Home = () => {
     const categoriesSub = getCategoriesRealTime((category) => {
       try {
         setCategories(category);
+        console.log({ category });
+        AsyncStorage.setItem("@categories", JSON.stringify(category));
       } catch (e) {
         console.log({ e });
       } finally {
@@ -192,6 +196,7 @@ const Home = () => {
       return (
         <ProductRenderItem
           item={item}
+          categories={categories}
           index={index}
           isEditingMode={isEditingMode}
           isSelected={selectedIds.has(item.id)}
@@ -200,7 +205,7 @@ const Home = () => {
         />
       );
     },
-    [isEditingMode, selectedIds.size]
+    [isEditingMode, categories, selectedIds.size]
   );
   const flatRef = useRef<FlatList>(null);
 
@@ -226,6 +231,35 @@ const Home = () => {
       return product.product_category === selectedCategory?.key;
     });
   }, [productList, selectedCategory, queryText]);
+
+  const onPressFab = async () => {
+    Haptics.selectionAsync(); // light tap feedback
+    if (isEditingMode) {
+      if (!selectedIds.size) return;
+      try {
+        setIsLoading(true);
+        const isDone = await deleteProducts(selectedIds);
+
+        if (isDone) {
+          // getProducts();
+          setIsEditingMode(false);
+        }
+      } catch (error) {
+        console.log("error deleting product", error);
+      } finally {
+        setIsLoading(false);
+      }
+    } else
+      router.navigate({
+        pathname: "/addProduct",
+        params: {
+          selectedCategory:
+            selectedCategory.key === "all"
+              ? JSON.stringify({})
+              : JSON.stringify(selectedCategory),
+        },
+      });
+  };
 
   return (
     <>
@@ -366,7 +400,66 @@ const Home = () => {
         </Animated.View>
 
         <Animated.View layout={LinearTransition} style={{ flex: 1 }}>
-          <MasonryList
+          <FlashList
+            data={filterData()}
+            keyExtractor={(item): string => item.id}
+            // numColumns={2}
+            ListEmptyComponent={
+              <View
+                style={{
+                  minHeight: width,
+
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Text variant="bodyLarge" style={{ color: colors.text }}>
+                  No Products Found
+                </Text>
+              </View>
+            }
+            showsVerticalScrollIndicator={false}
+            renderItem={renderProduct}
+            extraData={{ isEditingMode }}
+            // columnWrapperStyle={{gap: }}
+            contentContainerStyle={{
+              // gap: 10,
+              // paddingHorizontal: 10,
+              padding: 10,
+              paddingBottom: inset.bottom + 15,
+            }}
+          />
+          {/* <LegendList
+            data={filterData()}
+            keyExtractor={(item): string => item.id}
+            // numColumns={2}
+            ListEmptyComponent={
+              <View
+                style={{
+                  minHeight: width,
+
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Text variant="bodyLarge" style={{ color: colors.text }}>
+                  No Products Found
+                </Text>
+              </View>
+            }
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item, index }) => renderProduct({ index, item })}
+            recycleItems
+            extraData={{ isEditingMode }}
+            // columnWrapperStyle={{gap: }}
+            contentContainerStyle={{
+              gap: 10,
+              // paddingHorizontal: 10,
+              padding: 10,
+              paddingBottom: inset.bottom + 15,
+            }}
+          /> */}
+          {/* <MasonryList
             data={filterData()}
             keyExtractor={(item): string => item.id}
             numColumns={2}
@@ -390,7 +483,7 @@ const Home = () => {
               paddingHorizontal: 10,
               paddingBottom: inset.bottom + 15,
             }}
-          />
+          /> */}
         </Animated.View>
 
         <FAB
@@ -408,31 +501,7 @@ const Home = () => {
               primaryContainer: colors.primary,
             },
           }}
-          onPress={async () => {
-            await Haptics.selectionAsync(); // light tap feedback
-            if (isEditingMode) {
-              if (!selectedIds.size) return;
-              try {
-                setIsLoading(true);
-                const isDone = await deleteProducts(selectedIds);
-
-                if (isDone) {
-                  // getProducts();
-                  setIsEditingMode(false);
-                }
-              } catch (error) {
-                console.log("error deleting product", error);
-              } finally {
-                setIsLoading(false);
-              }
-            } else
-              router.navigate({
-                pathname: "/addProduct",
-                params: {
-                  categories: JSON.stringify(categories),
-                },
-              });
-          }}
+          onPress={onPressFab}
         />
       </Animated.View>
     </>

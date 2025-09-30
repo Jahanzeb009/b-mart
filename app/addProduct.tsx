@@ -1,62 +1,92 @@
-import { StatusBar } from "expo-status-bar";
 import {
   Alert,
-  Image,
   Platform,
-  Pressable,
+  ScrollView,
   StyleSheet,
+  TextInput,
   View,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { useTheme } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import {
-  getDownloadURL,
-  putFile,
-  ref,
-  uploadBytes,
-} from "@react-native-firebase/storage";
-import { Button, TextInput } from "react-native-paper";
+import { getDownloadURL, putFile, ref } from "@react-native-firebase/storage";
 import { addCategory, saveProduct, updateProduct } from "@/src/network";
-import { getApp } from "@react-native-firebase/app";
-
-import {
-  addDoc,
-  collection,
-  doc,
-  getDocs,
-  getDocsFromServer,
-  getFirestore,
-  Timestamp,
-} from "@react-native-firebase/firestore";
+import { Timestamp } from "@react-native-firebase/firestore";
 import { ProductTypes } from "@/src/types";
 import { storage } from "@/src/network/firebase";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { generateImageUrl } from "@/components/GenerateImageUrl";
 import CustomImage from "@/components/CustomImage";
 import { selectionAsync } from "expo-haptics";
-import { MenuAction, MenuView } from "@react-native-menu/menu";
+import {
+  MenuAction,
+  MenuComponentRef,
+  MenuView,
+} from "@react-native-menu/menu";
 import { SheetManager } from "react-native-actions-sheet";
 import CustomInput from "@/components/CustomInput";
 import CustomButton from "@/components/CustomButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { TextInputProps } from "react-native-paper";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
 const AddProductScreen = () => {
   const { colors } = useTheme();
 
+  const inputRefs = useRef<Record<string, TextInput | null>>({});
+
+  const getRef = (name: string) => (ref: TextInput | null) => {
+    inputRefs.current[name] = ref;
+  };
+
+  const menuRef = useRef<MenuComponentRef>(null);
   const fileNameRef = useRef(`images/products/${Date.now()}.jpg`);
   const storageRef = ref(storage, fileNameRef.current);
 
   const params = useLocalSearchParams() as unknown as ProductTypes & {
     isEditing: boolean;
-    categories?: { key: string; id: string }[];
+    selectedCategory?: { key: string; id: string };
   };
 
-  const categories =
-    typeof params?.categories === "string" ? JSON.parse(params.categories) : [];
+  const selectImageMenuData = [
+    // {
+    //   title: "Choose Image",
+    //   id: "choose_image",
+    //   image: Platform.select({
+    //     ios: "photo.on.rectangle",
+    //     android: "ic_gallery",
+    //   }),
+    //   imageColor: colors.text,
+    // },
+    {
+      title: "Pick Photo",
+      id: "pick_photo",
+      image: Platform.select({
+        ios: "photo",
+        android: "ic_gallery",
+      }),
+      imageColor: colors.text,
+    },
+    {
+      title: "Take Photo",
+      id: "take_photo",
+      image: Platform.select({
+        android: "ic_camera",
+        ios: "camera",
+      }),
+      imageColor: colors.text,
+    },
+  ];
 
-  // console.log(params)
+  const selectedCategory =
+    typeof params?.selectedCategory === "string"
+      ? JSON.parse(params.selectedCategory)
+      : params?.selectedCategory;
+
+  const [categories, setCategories] = useState<{ key: string; id: string }[]>(
+    []
+  );
 
   const [productInfo, setProductInfo] = useState<Omit<ProductTypes, "id">>({
     product_image: "",
@@ -64,20 +94,87 @@ const AddProductScreen = () => {
     product_mrp: "",
     product_invoice: "",
     last_updated_at: null,
-    product_category: "",
+    product_category: selectedCategory?.key ?? "",
+    product_extra_info: "",
   });
 
+  const getCategories = async () => {
+    let _categories = await AsyncStorage.getItem("@categories");
+    if (_categories) {
+      _categories = JSON.parse(_categories);
+
+      // @ts-ignore
+      setCategories(_categories);
+    }
+
+    // setCategories([]);
+  };
+
   useEffect(() => {
+    getCategories();
+
     if (params?.isEditing) {
       setProductInfo({
-        ...params,
+        last_updated_at: Timestamp.now(),
+        product_category: params.product_category,
+        product_invoice: params.product_invoice,
+        product_mrp: params.product_mrp,
+        product_name: params.product_name,
+        product_extra_info: params.product_extra_info,
         product_image: generateImageUrl(params.product_image),
       });
+
+      inputRefs.current?.product_name?.focus();
     }
   }, []);
 
   const [isLoading, setIsLoading] = useState(false);
-  const productNameRef = useRef(null);
+
+  const handleSaveProduct = async () => {
+    try {
+      const { product_name, product_invoice, product_mrp, product_category } =
+        productInfo;
+
+      if (
+        !product_name.length ||
+        !product_category.length ||
+        !product_invoice.length ||
+        !product_mrp.length
+      ) {
+        Alert.alert("Missing", "Fill all the details");
+        return;
+      }
+
+      selectionAsync();
+      setIsLoading(true);
+      const isHttpsUrl = (str: string) => /^https:\/\//i.test(str);
+      const isURL = isHttpsUrl(productInfo.product_image);
+      let url = "";
+      if (productInfo.product_image && !isURL) {
+        url = await getDownloadURL(storageRef);
+      }
+      if (params?.isEditing) {
+        await updateProduct(params.id, {
+          ...productInfo,
+          product_image: isURL ? productInfo.product_image : url,
+          last_updated_at: Timestamp.now(),
+        });
+        router.dismissTo("/");
+        return;
+      }
+
+      await saveProduct({
+        ...productInfo,
+        product_image: isURL ? productInfo.product_image : url,
+        last_updated_at: Timestamp.now(),
+      });
+      router.back();
+    } catch (error) {
+      console.log({ error });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <>
@@ -86,40 +183,17 @@ const AddProductScreen = () => {
           title: !params.isEditing ? "Add a Product" : "Update Product",
         }}
       />
-      <View
-        style={[
+      <KeyboardAwareScrollView
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={15}
+        contentContainerStyle={[
           styles.container,
           { backgroundColor: colors.background, gap: 15, marginTop: 30 },
         ]}
       >
         <MenuItem
           title="Select Image Source"
-          data={[
-            {
-              title: "Choose Image",
-              id: "choose_image",
-              image: Platform.select({
-                ios: "photo.on.rectangle",
-                android: "ic_gallery",
-              }),
-              imageColor: colors.text,
-            },
-            {
-              title: "Take Photo",
-              id: "take_photo",
-              image: Platform.select({
-                android: "ic_camera",
-                ios: "camera",
-              }),
-              imageColor: colors.text,
-            },
-          ]}
-          // style={({ pressed }) => ({
-          //   alignItems: "center",
-          //   alignSelf: "center",
-          //   justifyContent: "center",
-          //   opacity: pressed ? 0.5 : 1,
-          // })}
+          data={selectImageMenuData}
           onValueSelect={async (val) => {
             try {
               if (val === "take_photo") {
@@ -128,13 +202,13 @@ const AddProductScreen = () => {
                 let result = await ImagePicker.launchCameraAsync({
                   cameraType: ImagePicker.CameraType.back,
                   allowsEditing: true,
-                  aspect: [1, 1],
+                  // aspect: [1, 1],
                   quality: 0.5,
                 });
 
                 if (!result.canceled) {
                   // @ts-ignore
-                  productNameRef.current?.focus();
+                  inputRefs.current?.product_name.focus();
                   setProductInfo((pre) => ({
                     ...pre,
                     product_image: result.assets[0].uri,
@@ -147,16 +221,39 @@ const AddProductScreen = () => {
                   //   product_image: url,
                   // }));
                 }
-              } else {
-                const preUploadedImage = await SheetManager.show(
-                  "uploaded-images-sheet"
-                );
-                if (preUploadedImage)
+              } else if (val === "pick_photo") {
+                let result = await ImagePicker.launchImageLibraryAsync({
+                  mediaTypes: "images",
+                  allowsEditing: true,
+                  aspect: [4, 3],
+                  quality: 1,
+                });
+                if (!result.canceled) {
+                  // @ts-ignore
+                  inputRefs.current?.product_name.focus();
                   setProductInfo((pre) => ({
                     ...pre,
-                    product_image: preUploadedImage,
+                    product_image: result.assets[0].uri,
                   }));
+                  // console.log(result.assets[0].uri)
+                  await putFile(storageRef, result.assets[0].uri);
+
+                  // setProductInfo((pre) => ({
+                  //   ...pre,
+                  //   product_image: url,
+                  // }));
+                }
               }
+              //  else {
+              //   const preUploadedImage = await SheetManager.show(
+              //     "uploaded-images-sheet"
+              //   );
+              //   if (preUploadedImage)
+              //     setProductInfo((pre) => ({
+              //       ...pre,
+              //       product_image: preUploadedImage,
+              //     }));
+              // }
             } catch (e) {
               console.log({ e });
             }
@@ -193,10 +290,15 @@ const AddProductScreen = () => {
 
         <View style={{ gap: 15, paddingHorizontal: 15 }}>
           <CustomInput
-            ref={productNameRef}
+            ref={getRef("product_name")}
             label={"Product Name"}
             placeholder="Product Name"
             value={productInfo.product_name}
+            returnKeyType="next"
+            onSubmitEditing={() => {
+              console.log("first", inputRefs.current?.invoice);
+              inputRefs.current?.invoice?.focus();
+            }}
             onChangeText={(name) =>
               setProductInfo((pre) => ({ ...pre, product_name: name }))
             }
@@ -204,34 +306,45 @@ const AddProductScreen = () => {
 
           <View style={{ flexDirection: "row", gap: 15 }}>
             <CustomInput
+              ref={getRef("invoice")}
               label={"Invoice"}
               placeholder="Invoice"
               keyboardType="numeric"
               value={productInfo.product_invoice}
+              returnKeyType="next"
+              onSubmitEditing={() => {
+                inputRefs.current?.mrp?.focus();
+              }}
               onChangeText={(price) =>
                 setProductInfo((pre) => ({
                   ...pre,
                   product_invoice: price.replace(/\D/g, ""),
                 }))
               }
-              style={{ flex: 1 }}
+              containerStyle={{ flex: 1 }}
             />
             <CustomInput
+              ref={getRef("mrp")}
               label={"MRP"}
               placeholder="MRP"
               keyboardType="numeric"
               value={productInfo.product_mrp}
+              returnKeyType="next"
+              onSubmitEditing={() => {
+                inputRefs.current?.extra_info?.focus();
+              }}
               onChangeText={(price) => {
                 setProductInfo((pre) => ({
                   ...pre,
                   product_mrp: price.replace(/\D/g, ""),
                 }));
               }}
-              style={{ flex: 1, color: "white" }}
+              containerStyle={{ flex: 1, color: "white" }}
             />
           </View>
 
           <MenuItem
+            ref={menuRef}
             title="Select Category"
             data={[
               {
@@ -268,46 +381,27 @@ const AddProductScreen = () => {
             />
           </MenuItem>
 
-          <CustomButton
-            loading={isLoading}
-            onPress={async () => {
-              try {
-                selectionAsync();
-                setIsLoading(true);
-                const isHttpsUrl = (str: string) => /^https:\/\//i.test(str);
-                const isURL = isHttpsUrl(productInfo.product_image);
-                let url = "";
-                if (productInfo.product_image && !isURL) {
-                  url = await getDownloadURL(storageRef);
-                }
-                if (params?.isEditing) {
-                  await updateProduct(params.id, {
-                    ...productInfo,
-                    product_image: isURL ? productInfo.product_image : url,
-                    last_updated_at: Timestamp.now(),
-                  });
-                  // router.p();
-                  router.dismissTo("/");
-                  return;
-                }
-
-                await saveProduct({
-                  ...productInfo,
-                  product_image: isURL ? productInfo.product_image : url,
-                  last_updated_at: Timestamp.now(),
-                });
-                router.back();
-              } catch (error) {
-                console.log({ error });
-              } finally {
-                setIsLoading(false);
-              }
+          <CustomInput
+            ref={getRef("extra_info")}
+            label={"Extra Info"}
+            placeholder="Extra Info"
+            value={productInfo.product_extra_info}
+            returnKeyType="done"
+            onSubmitEditing={() => handleSaveProduct()}
+            onChangeText={(value) => {
+              setProductInfo((pre) => ({
+                ...pre,
+                product_extra_info: value,
+              }));
             }}
-          >
+            style={{ color: "white" }}
+          />
+
+          <CustomButton loading={isLoading} onPress={handleSaveProduct}>
             {params?.isEditing ? "update" : "save"}
           </CustomButton>
         </View>
-      </View>
+      </KeyboardAwareScrollView>
     </>
   );
 };
@@ -316,7 +410,7 @@ export default AddProductScreen;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    // flex: 1,
   },
   title: {
     fontSize: 20,
@@ -329,19 +423,18 @@ const styles = StyleSheet.create({
   },
 });
 
-const MenuItem = ({
-  title,
-  data,
-  onValueSelect,
-  children,
-}: {
-  data: MenuAction[];
-  title?: string;
-  onValueSelect?: (value: string) => void;
-  children: React.ReactNode;
-}) => {
+const MenuItem = forwardRef<
+  MenuComponentRef,
+  {
+    data: MenuAction[];
+    title?: string;
+    onValueSelect?: (value: string) => void;
+    children: React.ReactNode;
+  }
+>(({ title, data, onValueSelect, children }, ref) => {
   return (
     <MenuView
+      ref={ref}
       title={title}
       // themeVariant=""
       onPressAction={({ nativeEvent }) => onValueSelect?.(nativeEvent.event)}
@@ -351,4 +444,4 @@ const MenuItem = ({
       {children}
     </MenuView>
   );
-};
+});

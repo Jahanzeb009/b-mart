@@ -3,25 +3,12 @@ import { formatCurrency } from "@/src/utils";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@react-navigation/native";
 import { router } from "expo-router";
-import { memo, useState } from "react";
-import {
-  ActivityIndicator,
-  StyleSheet,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
-} from "react-native";
-import {
-  Avatar,
-  Card,
-  Divider,
-  HelperText,
-  Icon,
-  IconButton,
-  Text,
-} from "react-native-paper";
+import { memo, useEffect } from "react";
+import { Image, StyleSheet, useWindowDimensions, View } from "react-native";
+import { Card, Divider, HelperText, Text } from "react-native-paper";
 import * as Haptics from "expo-haptics";
 import CustomImage from "./CustomImage";
+import Animated from "react-native-reanimated";
 
 export const ProductRenderItem = memo(
   ({
@@ -31,6 +18,7 @@ export const ProductRenderItem = memo(
     isEditingMode,
     onPress,
     isSelected,
+    categories,
   }: {
     item: ProductTypes;
     index: number;
@@ -38,6 +26,7 @@ export const ProductRenderItem = memo(
     onLongPress: () => void;
     onPress: (id: string) => void;
     isSelected: boolean;
+    categories: { key: string; id: string }[];
   }) => {
     let { dark, colors } = useTheme();
 
@@ -45,25 +34,197 @@ export const ProductRenderItem = memo(
 
     const PADDING = 15;
     const GAP = 0;
-    const IMAGE_SIZE = (width - PADDING * 2 - 10 - 10 - 5) / 2;
-    // const IMAGE_SIZE = (width - PADDING * 2) * 0.2;
+    // const IMAGE_SIZE = (width - PADDING * 2 - 10 - 5) / 2;
+    const IMAGE_SIZE = width * 0.25;
+
+    // let w = width;
+    // let h = w;
+
+    // useEffect(() => {
+    //   if (item.product_image) {
+    //     Image.getSize(item.product_image, (width, height) => {
+    //       // setSize({ width, height });
+    //       // console.log({ width, height });
+    //       w = width;
+    //       h = height;
+    //     });
+    //   }
+    // }, []);
+    // const aspectRatio = w / h;
+    // const displayWidth = IMAGE_SIZE;
+    // const displayHeight = displayWidth / aspectRatio;
+
+    return (
+      <Card
+        mode="contained"
+        theme={{
+          colors: {
+            surfaceVariant: colors.card,
+          },
+        }}
+        onLongPress={onLongPress}
+        onPress={() => {
+          if (isEditingMode) {
+            onPress?.(item.id);
+            return;
+          }
+          Haptics.selectionAsync();
+          router.navigate({
+            pathname: "/productDetails",
+            params: {
+              ...item,
+              categories: JSON.stringify(categories),
+              last_updated_at: item.last_updated_at?.toDate().toLocaleString(),
+            },
+          });
+        }}
+        style={{ marginTop: 10 }}
+        contentStyle={{ flexDirection: "row" }}
+      >
+        <Animated.View sharedTransitionTag={`${item.id}`}>
+          {item.product_image ? (
+            <CustomImage
+              width={IMAGE_SIZE}
+              height={IMAGE_SIZE}
+              // width={IMAGE_SIZE}
+              // height={displayHeight}
+              source={{ uri: item.product_image }}
+              resizeMode="contain"
+              style={{ borderBottomRightRadius: 0 }}
+            />
+          ) : (
+            <CustomImage
+              source={require("../assets/images/icon_grey.png")}
+              width={IMAGE_SIZE}
+              height={IMAGE_SIZE}
+              resizeMode="cover"
+              style={{ borderBottomRightRadius: 0 }}
+            />
+          )}
+        </Animated.View>
+
+        <View style={{ flex: 1, paddingTop: 5 }}>
+          <View
+            style={{ flex: 1, justifyContent: "center", paddingHorizontal: 10 }}
+          >
+            <Text
+              style={{
+                textAlign: "center",
+                color: colors.text,
+                fontWeight: "bold",
+              }}
+              numberOfLines={1}
+              variant="titleLarge"
+            >
+              {item.product_name}
+            </Text>
+          </View>
+
+          <View
+            style={{
+              // flex: 1,
+              // marginTop: 5,
+              paddingBottom: 5,
+              flexDirection: "row",
+              borderTopRightRadius: 10,
+              borderBottomRightRadius: 10,
+              backgroundColor: colors.primary + 40,
+            }}
+          >
+            {/* invoice */}
+            <View style={{ flex: 1 }}>
+              <HelperText
+                style={{ color: colors.text, textAlign: "center" }}
+                type="info"
+              >
+                Invoice
+              </HelperText>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontWeight: "bold",
+                    textAlign: "center",
+                  }}
+                  variant="bodyMedium"
+                >
+                  {formatCurrency(+item.product_invoice)}
+                </Text>
+              </View>
+            </View>
+
+            <View
+              style={{
+                height: "auto",
+                marginVertical: 5,
+                marginBottom: 0,
+                width: 1,
+                backgroundColor: colors.primary,
+              }}
+            />
+
+            {/* mrp */}
+            <View style={{ flex: 1 }}>
+              <HelperText
+                style={{ color: colors.text, textAlign: "center" }}
+                type="info"
+              >
+                MRP
+              </HelperText>
+
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontWeight: "bold",
+                    textAlign: "center",
+                  }}
+                  variant="bodyMedium"
+                >
+                  {formatCurrency(+item.product_mrp)}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {isEditingMode && (
+          <View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFillObject,
+              {
+                padding: 15,
+                alignItems: "flex-end",
+                backgroundColor: dark ? "#0006" : "#fff6",
+              },
+            ]}
+          >
+            <MaterialCommunityIcons
+              size={24}
+              color={colors.text}
+              name={
+                isSelected
+                  ? "checkbox-marked-circle"
+                  : "checkbox-blank-circle-outline"
+              }
+            />
+          </View>
+        )}
+      </Card>
+    );
 
     // return (
     //   <View
     //     style={{
-    //       // flex: 1,
-    //       // marginTop: 5,
-    //       // padding: 5,
-    //       // paddingLeft: index % 2 === 0 ? 0 : 5,
-    //       // paddingRight: index % 2 !== 0 ? 0 : 5,
-    //       backgroundColor: "blue",
+    //       flex: 1,
+    //       marginTop: 5,
+    //       padding: 5,
     //     }}
     //   >
     //     <Card
     //       style={{
-    //         // flex: 1,
-    //         width: IMAGE_SIZE,
-    //         // position: "absolute",
+    //         flex: 1,
     //         borderRadius: 10,
     //         overflow: "hidden",
     //         borderWidth: 1,
@@ -80,6 +241,7 @@ export const ProductRenderItem = memo(
     //           pathname: "/productDetails",
     //           params: {
     //             ...item,
+    //             categories: JSON.stringify(categories),
     //             last_updated_at: item.last_updated_at
     //               ?.toDate()
     //               .toLocaleString(),
@@ -96,9 +258,9 @@ export const ProductRenderItem = memo(
     //       {item.product_image && (
     //         <CustomImage
     //           width={IMAGE_SIZE}
-    //           height={IMAGE_SIZE * 0.6}
+    //           height={displayHeight}
     //           source={{ uri: item.product_image }}
-    //           resizeMode="cover"
+    //           resizeMode="contain"
     //         />
     //       )}
 
@@ -109,20 +271,29 @@ export const ProductRenderItem = memo(
     //           textAlign: "center",
     //           color: colors.text,
     //           fontWeight: "bold",
+    //           marginVertical: 5,
     //         }}
-    //         // style={{ marginVertical: 0 }}
     //       />
 
     //       <Divider />
-    //       <View style={{ flexDirection: "row", paddingBottom: 15 }}>
+    //       <View
+    //         style={{
+    //           flexDirection: "row",
+    //           paddingBottom: 15,
+    //           gap: 5,
+    //           paddingHorizontal: 5,
+    //         }}
+    //       >
+    //         {/* invoice */}
     //         <View
     //           style={{
     //             flex: 1,
-    //             justifyContent: "center",
-    //             alignItems: "center",
     //           }}
     //         >
-    //           <HelperText style={{ color: colors.text }} type="info">
+    //           <HelperText
+    //             style={{ color: colors.text, textAlign: "center" }}
+    //             type="info"
+    //           >
     //             Invoice
     //           </HelperText>
     //           <View
@@ -144,17 +315,20 @@ export const ProductRenderItem = memo(
     //             </Text>
     //           </View>
     //         </View>
+    //         {/* vertical divider */}
     //         <Divider
     //           style={{ height: "100%", width: StyleSheet.hairlineWidth }}
     //         />
+    //         {/* mrp */}
     //         <View
     //           style={{
     //             flex: 1,
-    //             justifyContent: "center",
-    //             alignItems: "center",
     //           }}
     //         >
-    //           <HelperText style={{ color: colors.text }} type="info">
+    //           <HelperText
+    //             style={{ color: colors.text, textAlign: "center" }}
+    //             type="info"
+    //           >
     //             MRP
     //           </HelperText>
 
@@ -204,159 +378,5 @@ export const ProductRenderItem = memo(
     //     </Card>
     //   </View>
     // );
-    return (
-      <View
-        style={{
-          flex: 1,
-          marginTop: 5,
-          padding: 5,
-          // paddingLeft: index % 2 === 0 ? 0 : 5,
-          // paddingRight: index % 2 !== 0 ? 0 : 5,
-          // backgroundColor: "blue",
-        }}
-      >
-        <Card
-          style={{
-            flex: 1,
-            borderRadius: 10,
-            overflow: "hidden",
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-          onLongPress={onLongPress}
-          onPress={() => {
-            if (isEditingMode) {
-              onPress?.(item.id);
-              return;
-            }
-            Haptics.selectionAsync();
-            router.navigate({
-              pathname: "/productDetails",
-              params: {
-                ...item,
-                last_updated_at: item.last_updated_at
-                  ?.toDate()
-                  .toLocaleString(),
-              },
-            });
-          }}
-          mode="contained"
-          theme={{
-            colors: {
-              surfaceVariant: colors.card,
-            },
-          }}
-        >
-          {item.product_image && (
-            <CustomImage
-              width={IMAGE_SIZE}
-              height={IMAGE_SIZE * 0.6}
-              source={{ uri: item.product_image }}
-              resizeMode="cover"
-            />
-          )}
-
-          <Card.Title
-            title={item.product_name}
-            titleNumberOfLines={2}
-            titleStyle={{
-              textAlign: "center",
-              color: colors.text,
-              fontWeight: "bold",
-            }}
-            // style={{ marginVertical: 0 }}
-          />
-
-          <Divider />
-          <View style={{ flexDirection: "row", paddingBottom: 15 }}>
-            <View
-              style={{
-                flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <HelperText style={{ color: colors.text }} type="info">
-                Invoice
-              </HelperText>
-              <View
-                style={{
-                  flex: 1,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    color: colors.text,
-                    fontWeight: "bold",
-                    textAlign: "center",
-                  }}
-                  variant="titleMedium"
-                >
-                  {formatCurrency(+item.product_invoice)}
-                </Text>
-              </View>
-            </View>
-            <Divider
-              style={{ height: "100%", width: StyleSheet.hairlineWidth }}
-            />
-            <View
-              style={{
-                flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <HelperText style={{ color: colors.text }} type="info">
-                MRP
-              </HelperText>
-
-              <View
-                style={{
-                  flex: 1,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    color: colors.text,
-                    fontWeight: "bold",
-                    textAlign: "center",
-                  }}
-                  variant="titleMedium"
-                >
-                  {formatCurrency(+item.product_mrp)}
-                </Text>
-              </View>
-            </View>
-          </View>
-          {isEditingMode && (
-            <View
-              pointerEvents="none"
-              style={[
-                StyleSheet.absoluteFillObject,
-                {
-                  padding: 15,
-                  alignItems: "flex-end",
-                  backgroundColor: dark ? "#0006" : "#fff6",
-                },
-              ]}
-            >
-              <MaterialCommunityIcons
-                size={24}
-                color={colors.text}
-                name={
-                  isSelected
-                    ? "checkbox-marked-circle"
-                    : "checkbox-blank-circle-outline"
-                }
-              />
-            </View>
-          )}
-        </Card>
-      </View>
-    );
   }
 );

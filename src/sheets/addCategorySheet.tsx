@@ -4,7 +4,6 @@ import ActionSheet, {
   SheetManager,
   SheetProps,
 } from "react-native-actions-sheet";
-import { Button, TextInput } from "react-native-paper";
 import CustomInput from "@/components/CustomInput";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CustomButton from "@/components/CustomButton";
