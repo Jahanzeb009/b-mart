@@ -1,15 +1,12 @@
 import {
   View,
-  Text,
   ActivityIndicator,
   StyleSheet,
-  ImageSourcePropType,
   DimensionValue,
-  ImageResizeMode,
 } from "react-native";
 import React, { useState } from "react";
 import { useTheme } from "@react-navigation/native";
-import { Image, ImageContentFit } from "expo-image";
+import FastImage, { FastImageProps } from "@d11/react-native-fast-image";
 
 const CustomImage = ({
   width,
@@ -17,12 +14,14 @@ const CustomImage = ({
   resizeMode,
   source,
   style,
+  imageStyle,
 }: {
-  source: ImageSourcePropType;
+  source: FastImageProps["source"];
   width: DimensionValue;
   height: DimensionValue;
-  resizeMode: ImageContentFit;
+  resizeMode: FastImageProps["resizeMode"];
   style?: View["props"]["style"];
+  imageStyle?: FastImageProps["style"];
 }) => {
   const [isLoadingImage, setIsLoadingImage] = useState(false);
 
@@ -41,12 +40,12 @@ const CustomImage = ({
         style,
       ]}
     >
-      <Image
+      <FastImage
         source={source}
         onLoadStart={() => setIsLoadingImage(true)}
         onLoadEnd={() => setIsLoadingImage(false)}
-        style={{ width, height }}
-        contentFit={resizeMode}
+        style={[{ width, height }, imageStyle]}
+        resizeMode={resizeMode}
       />
       {isLoadingImage && (
         <ActivityIndicator style={StyleSheet.absoluteFillObject} />
