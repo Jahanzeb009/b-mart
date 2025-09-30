@@ -11,6 +11,7 @@ import "@/src/sheets";
 import { SheetProvider } from "react-native-actions-sheet";
 import { useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -63,29 +64,31 @@ function RootLayoutNav() {
   };
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "black" }}>
-      <ThemeProvider value={colorScheme === "dark" ? Dark : Light}>
-        <SheetProvider>
-          <Stack>
-            <Stack.Screen
-              name="index"
-              options={{
-                title: "B Mart",
-                headerShadowVisible: false,
-                // headerTransparent: true,
-              }}
-            />
-            <Stack.Screen
-              name="addProduct"
-              //  options={{ presentation: "containedModal" }}
-            />
-            <Stack.Screen
-              name="productDetails"
-              options={{ presentation: "modal" }}
-            />
-          </Stack>
-        </SheetProvider>
-      </ThemeProvider>
-    </GestureHandlerRootView>
+    <KeyboardProvider>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: "black" }}>
+        <ThemeProvider value={colorScheme === "dark" ? Dark : Light}>
+          <SheetProvider>
+            <Stack>
+              <Stack.Screen
+                name="index"
+                options={{
+                  title: "B Mart",
+                  headerShadowVisible: false,
+                  // headerTransparent: true,
+                }}
+              />
+              <Stack.Screen
+                name="addProduct"
+                //  options={{ presentation: "containedModal" }}
+              />
+              <Stack.Screen
+                name="productDetails"
+                // options={{ presentation: "modal" }}
+              />
+            </Stack>
+          </SheetProvider>
+        </ThemeProvider>
+      </GestureHandlerRootView>
+    </KeyboardProvider>
   );
 }
