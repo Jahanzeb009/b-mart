@@ -7,6 +7,10 @@ import React, {
 import { useTheme } from "@react-navigation/native";
 import { Text } from "react-native-paper";
 import { Pressable, TextInput, View, ViewStyle } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  withTiming,
+} from "react-native-reanimated";
 
 type CustomTextInputProps = {
   label: string;
@@ -24,65 +28,66 @@ const CustomInput = forwardRef<TextInput, CustomTextInputProps>(
 
     useImperativeHandle(ref, () => inputRef.current as TextInput);
 
+    const aniStyle = useAnimatedStyle(() => ({
+      borderColor: withTiming(isFocused ? colors.primary : colors.border),
+    }));
     return (
-      <Pressable
-        onPress={() => {
-          inputRef.current?.focus();
-        }}
+      <Animated.View
         style={[
           {
             backgroundColor: colors.card,
             borderRadius: 10,
-            padding: 7,
-            gap: 4,
+
             borderWidth: 1,
-            borderColor: isFocused ? colors.primary : colors.border,
           },
+          aniStyle,
           containerStyle,
         ]}
       >
-        {label && (
-          <Text
-            style={{ color: isFocused ? colors.primary : colors.text + "90" }}
-            variant="labelSmall"
-          >
-            {label}
-          </Text>
-        )}
-        <TextInput
-          ref={(r) => {
-            inputRef.current = r;
-            ref = r;
-          }}
-          onFocus={() => {
-            setIsFocused(true);
-          }}
-          onBlur={() => {
-            setIsFocused(false);
-          }}
-          placeholderTextColor={"grey"}
-          style={[
-            {
-              color: colors.text,
+        <Pressable
+          onPress={() => inputRef.current?.focus()}
+          style={{ flex: 1, padding: 7, gap: 4 }}
+        >
+          {label && (
+            <Text
+              style={{ color: isFocused ? colors.primary : colors.text + "90" }}
+              variant="labelSmall"
+            >
+              {label}
+            </Text>
+          )}
+          <TextInput
+            ref={inputRef}
+            onFocus={() => {
+              setIsFocused(true);
+            }}
+            onBlur={() => {
+              setIsFocused(false);
+            }}
+            placeholderTextColor={"grey"}
+            style={[
+              {
+                color: colors.text,
 
-              // height:'100%'
-              // padding: 10,
-            },
-            style,
-          ]}
-          // label={label}
-          // theme={{
-          //   colors: {
-          //     primary: colors.primary,
-          //     background: colors.card,
-          //     onSurface: colors.text,
-          //     outline: "grey",
-          //     onSurfaceVariant: "grey",
-          //   },
-          // }}
-          {...rest}
-        />
-      </Pressable>
+                // height:'100%'
+                // padding: 10,
+              },
+              style,
+            ]}
+            // label={label}
+            // theme={{
+            //   colors: {
+            //     primary: colors.primary,
+            //     background: colors.card,
+            //     onSurface: colors.text,
+            //     outline: "grey",
+            //     onSurfaceVariant: "grey",
+            //   },
+            // }}
+            {...rest}
+          />
+        </Pressable>
+      </Animated.View>
     );
   }
 );
