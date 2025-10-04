@@ -9,7 +9,7 @@ import { Card, Divider, HelperText, Text } from "react-native-paper";
 import * as Haptics from "expo-haptics";
 import CustomImage from "./CustomImage";
 import Animated from "react-native-reanimated";
-
+import TextTicker from "react-native-text-ticker";
 export const ProductRenderItem = memo(
   ({
     item,
@@ -35,7 +35,7 @@ export const ProductRenderItem = memo(
     const PADDING = 15;
     const GAP = 0;
     // const IMAGE_SIZE = (width - PADDING * 2 - 10 - 5) / 2;
-    const IMAGE_SIZE = width * 0.25;
+    const IMAGE_SIZE = width * 0.15;
 
     // let w = width;
     // let h = w;
@@ -79,7 +79,12 @@ export const ProductRenderItem = memo(
           });
         }}
         style={{ marginTop: 10 }}
-        contentStyle={{ flexDirection: "row" }}
+        contentStyle={{
+          flexDirection: "row",
+          borderWidth: 1,
+          borderRadius: 10,
+          borderColor: colors.border,
+        }}
       >
         <Animated.View sharedTransitionTag={`${item.id}`}>
           {item.product_image ? (
@@ -90,7 +95,10 @@ export const ProductRenderItem = memo(
               // height={displayHeight}
               source={{ uri: item.product_image }}
               resizeMode="contain"
-              style={{ borderBottomRightRadius: 0 }}
+              style={{
+                minHeight: IMAGE_SIZE,
+                minWidth: IMAGE_SIZE,
+              }}
             />
           ) : (
             <CustomImage
@@ -98,93 +106,71 @@ export const ProductRenderItem = memo(
               width={IMAGE_SIZE}
               height={IMAGE_SIZE}
               resizeMode="cover"
-              style={{ borderBottomRightRadius: 0 }}
+              style={{ minHeight: IMAGE_SIZE, minWidth: IMAGE_SIZE }}
             />
           )}
         </Animated.View>
 
-        <View style={{ flex: 1, paddingTop: 5 }}>
+        <View style={{ flex: 1, paddingVertical: 5 }}>
+          {/* title */}
           <View
-            style={{ flex: 1, justifyContent: "center", paddingHorizontal: 10 }}
+            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
           >
-            <Text
+            <TextTicker
               style={{
+                fontSize: 18,
                 textAlign: "center",
                 color: colors.text,
                 fontWeight: "bold",
               }}
-              numberOfLines={1}
-              variant="titleLarge"
+              duration={item.product_name.length * 400}
+              loop
+              bounce
+              repeatSpacer={50}
+              marqueeDelay={1000}
             >
               {item.product_name}
-            </Text>
+            </TextTicker>
           </View>
 
           <View
-            style={{
-              // flex: 1,
-              // marginTop: 5,
-              paddingBottom: 5,
-              flexDirection: "row",
-              borderTopRightRadius: 10,
-              borderBottomRightRadius: 10,
-              backgroundColor: colors.primary + 40,
-            }}
+            style={{ flexDirection: "row", justifyContent: "space-evenly" }}
           >
-            {/* invoice */}
-            <View style={{ flex: 1 }}>
-              <HelperText
-                style={{ color: colors.text, textAlign: "center" }}
-                type="info"
-              >
-                Invoice
-              </HelperText>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    color: colors.text,
-                    fontWeight: "bold",
-                    textAlign: "center",
-                  }}
-                  variant="bodyMedium"
-                >
-                  {formatCurrency(+item.product_invoice)}
-                </Text>
-              </View>
-            </View>
+            <Text style={{ color: colors.text, textAlign: "center" }}>
+              Invoice
+            </Text>
 
-            <View
+            <Text
               style={{
-                height: "auto",
-                marginVertical: 5,
-                marginBottom: 0,
+                color: colors.text,
+                fontWeight: "bold",
+                textAlign: "center",
+              }}
+              variant="bodyMedium"
+            >
+              {formatCurrency(+item.product_invoice)}
+            </Text>
+
+            <Divider
+              style={{
+                height: "100%",
                 width: 1,
-                backgroundColor: colors.primary,
+                backgroundColor: colors.text,
               }}
             />
 
-            {/* mrp */}
-            <View style={{ flex: 1 }}>
-              <HelperText
-                style={{ color: colors.text, textAlign: "center" }}
-                type="info"
-              >
-                MRP
-              </HelperText>
+            <Text style={{ color: colors.text, textAlign: "center" }}>MRP</Text>
 
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    color: colors.text,
-                    fontWeight: "bold",
-                    textAlign: "center",
-                  }}
-                  variant="bodyMedium"
-                >
-                  {formatCurrency(+item.product_mrp)}
-                </Text>
-              </View>
-            </View>
+            <Text
+              style={{
+                color: colors.text,
+                fontWeight: "bold",
+                textAlign: "center",
+              }}
+              variant="bodyMedium"
+            >
+              {formatCurrency(+item.product_mrp)}
+            </Text>
           </View>
         </View>
 

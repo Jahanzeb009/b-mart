@@ -273,6 +273,9 @@ const Home = () => {
 
                 {isEditingMode && (
                   <RectButton
+                    style={{
+                      borderRadius: 100,
+                    }}
                     onPress={() => {
                       Haptics.selectionAsync();
 
@@ -296,6 +299,10 @@ const Home = () => {
                 )}
 
                 <RectButton
+                  // activeOpacity={0}
+                  style={{
+                    borderRadius: 100,
+                  }}
                   onPress={async () => {
                     Haptics.selectionAsync();
 
@@ -335,6 +342,9 @@ const Home = () => {
                   />
                 </RectButton>
                 <RectButton
+                  style={{
+                    borderRadius: 100,
+                  }}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setShowSearch((pre) => !pre);
@@ -426,7 +436,7 @@ const Home = () => {
               // gap: 10,
               // paddingHorizontal: 10,
               padding: 10,
-              paddingBottom: inset.bottom + 15,
+              paddingBottom: inset.bottom + 100,
             }}
           />
           {/* <LegendList
@@ -513,7 +523,6 @@ export default Home;
 const ChipsContainer = forwardRef(
   ({ categories, onPress, selectedCategory }, ref) => {
     const { colors } = useTheme();
-    // const headerHeight = useHeaderHeight();
 
     return (
       <FlatList
@@ -529,7 +538,12 @@ const ChipsContainer = forwardRef(
         }}
         renderItem={({ item, index }) => {
           return (
-            <RectButton onPress={() => onPress(item)}>
+            <RectButton
+              style={{
+                borderRadius: 100,
+              }}
+              onPress={() => onPress(item)}
+            >
               <Chip
                 textStyle={{ textTransform: "capitalize" }}
                 style={{

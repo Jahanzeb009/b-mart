@@ -1,11 +1,4 @@
-import {
-  Alert,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, Platform, StyleSheet, TextInput, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { forwardRef, useEffect, useRef, useState } from "react";
 import { useTheme } from "@react-navigation/native";
@@ -28,7 +21,6 @@ import { SheetManager } from "react-native-actions-sheet";
 import CustomInput from "@/components/CustomInput";
 import CustomButton from "@/components/CustomButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { TextInputProps } from "react-native-paper";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
 const AddProductScreen = () => {
@@ -120,7 +112,7 @@ const AddProductScreen = () => {
         product_invoice: params.product_invoice,
         product_mrp: params.product_mrp,
         product_name: params.product_name,
-        product_extra_info: params.product_extra_info,
+        product_extra_info: params?.product_extra_info ?? "",
         product_image: generateImageUrl(params.product_image),
       });
 
@@ -149,14 +141,18 @@ const AddProductScreen = () => {
       setIsLoading(true);
       const isHttpsUrl = (str: string) => /^https:\/\//i.test(str);
       const isURL = isHttpsUrl(productInfo.product_image);
-      let url = "";
+      let product_image_url = "";
       if (productInfo.product_image && !isURL) {
-        url = await getDownloadURL(storageRef);
+        console.log(productInfo.product_image);
+        await putFile(storageRef, productInfo.product_image);
+        console.log(storageRef.fullPath);
+        product_image_url = await getDownloadURL(storageRef);
       }
+      console.log({ product_image_url });
       if (params?.isEditing) {
         await updateProduct(params.id, {
           ...productInfo,
-          product_image: isURL ? productInfo.product_image : url,
+          product_image: product_image_url || productInfo.product_image,
           last_updated_at: Timestamp.now(),
         });
         router.dismissTo("/");
@@ -165,7 +161,7 @@ const AddProductScreen = () => {
 
       await saveProduct({
         ...productInfo,
-        product_image: isURL ? productInfo.product_image : url,
+        product_image: product_image_url,
         last_updated_at: Timestamp.now(),
       });
       router.back();
@@ -173,6 +169,65 @@ const AddProductScreen = () => {
       console.log({ error });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const onImageSelect = async (val: string) => {
+    try {
+      if (val === "take_photo") {
+        await ImagePicker.requestCameraPermissionsAsync();
+
+        let result = await ImagePicker.launchCameraAsync({
+          cameraType: ImagePicker.CameraType.back,
+          allowsEditing: true,
+          quality: 0.5,
+        });
+
+        if (!result.canceled) {
+          // @ts-ignore
+          inputRefs.current?.product_name.focus();
+          setProductInfo((pre) => ({
+            ...pre,
+            product_image: result.assets[0].uri,
+          }));
+
+          await putFile(storageRef, result.assets[0].uri);
+        }
+      } else if (val === "pick_photo") {
+        let result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: "images",
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 1,
+        });
+        if (!result.canceled) {
+          // @ts-ignore
+          inputRefs.current?.product_name.focus();
+          setProductInfo((pre) => ({
+            ...pre,
+            product_image: result.assets[0].uri,
+          }));
+
+          // console.log(result.assets[0].uri)
+
+          // setProductInfo((pre) => ({
+          //   ...pre,
+          //   product_image: url,
+          // }));
+        }
+      }
+      //  else {
+      //   const preUploadedImage = await SheetManager.show(
+      //     "uploaded-images-sheet"
+      //   );
+      //   if (preUploadedImage)
+      //     setProductInfo((pre) => ({
+      //       ...pre,
+      //       product_image: preUploadedImage,
+      //     }));
+      // }
+    } catch (e) {
+      console.log({ e });
     }
   };
 
@@ -191,102 +246,41 @@ const AddProductScreen = () => {
           { backgroundColor: colors.background, gap: 15, marginTop: 30 },
         ]}
       >
-        <MenuItem
-          title="Select Image Source"
-          data={selectImageMenuData}
-          onValueSelect={async (val) => {
-            try {
-              if (val === "take_photo") {
-                await ImagePicker.requestCameraPermissionsAsync();
-
-                let result = await ImagePicker.launchCameraAsync({
-                  cameraType: ImagePicker.CameraType.back,
-                  allowsEditing: true,
-                  // aspect: [1, 1],
-                  quality: 0.5,
-                });
-
-                if (!result.canceled) {
-                  // @ts-ignore
-                  inputRefs.current?.product_name.focus();
-                  setProductInfo((pre) => ({
-                    ...pre,
-                    product_image: result.assets[0].uri,
-                  }));
-
-                  await putFile(storageRef, result.assets[0].uri);
-
-                  // setProductInfo((pre) => ({
-                  //   ...pre,
-                  //   product_image: url,
-                  // }));
-                }
-              } else if (val === "pick_photo") {
-                let result = await ImagePicker.launchImageLibraryAsync({
-                  mediaTypes: "images",
-                  allowsEditing: true,
-                  aspect: [4, 3],
-                  quality: 1,
-                });
-                if (!result.canceled) {
-                  // @ts-ignore
-                  inputRefs.current?.product_name.focus();
-                  setProductInfo((pre) => ({
-                    ...pre,
-                    product_image: result.assets[0].uri,
-                  }));
-                  // console.log(result.assets[0].uri)
-                  await putFile(storageRef, result.assets[0].uri);
-
-                  // setProductInfo((pre) => ({
-                  //   ...pre,
-                  //   product_image: url,
-                  // }));
-                }
-              }
-              //  else {
-              //   const preUploadedImage = await SheetManager.show(
-              //     "uploaded-images-sheet"
-              //   );
-              //   if (preUploadedImage)
-              //     setProductInfo((pre) => ({
-              //       ...pre,
-              //       product_image: preUploadedImage,
-              //     }));
-              // }
-            } catch (e) {
-              console.log({ e });
-            }
-          }}
-        >
-          {productInfo.product_image ? (
-            <CustomImage
-              source={{ uri: productInfo.product_image }}
-              width={150}
-              height={150}
-              style={{ alignSelf: "center" }}
-              resizeMode={"contain"}
-            />
-          ) : (
-            <View
-              style={{
-                width: 150,
-                height: 150,
-                backgroundColor: colors.card,
-                borderRadius: 10,
-                justifyContent: "center",
-                alignItems: "center",
-                alignSelf: "center",
-              }}
-            >
-              <MaterialCommunityIcons
-                name="camera"
-                size={40}
-                color={colors.text}
+        <View style={{ alignSelf: "center" }}>
+          <MenuItem
+            title="Select Image Source"
+            data={selectImageMenuData}
+            onValueSelect={onImageSelect}
+          >
+            {productInfo.product_image ? (
+              <CustomImage
+                source={{ uri: productInfo.product_image }}
+                width={150}
+                height={150}
+                style={{ alignSelf: "center" }}
+                resizeMode={"contain"}
               />
-            </View>
-          )}
-        </MenuItem>
+            ) : (
+              <View
+                style={{
+                  width: 150,
+                  height: 150,
+                  backgroundColor: colors.card,
+                  borderRadius: 10,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  alignSelf: "center",
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="camera"
+                  size={40}
+                  color={colors.text}
+                />
+              </View>
+            )}
+          </MenuItem>
+        </View>
 
         <View style={{ gap: 15, paddingHorizontal: 15 }}>
           <CustomInput
@@ -295,10 +289,7 @@ const AddProductScreen = () => {
             placeholder="Product Name"
             value={productInfo.product_name}
             returnKeyType="next"
-            onSubmitEditing={() => {
-              console.log("first", inputRefs.current?.invoice);
-              inputRefs.current?.invoice?.focus();
-            }}
+            onSubmitEditing={() => inputRefs.current?.invoice?.focus()}
             onChangeText={(name) =>
               setProductInfo((pre) => ({ ...pre, product_name: name }))
             }
@@ -318,7 +309,7 @@ const AddProductScreen = () => {
               onChangeText={(price) =>
                 setProductInfo((pre) => ({
                   ...pre,
-                  product_invoice: price.replace(/\D/g, ""),
+                  product_invoice: price.replace(/[^\d.]/g, ""),
                 }))
               }
               containerStyle={{ flex: 1 }}
@@ -336,10 +327,10 @@ const AddProductScreen = () => {
               onChangeText={(price) => {
                 setProductInfo((pre) => ({
                   ...pre,
-                  product_mrp: price.replace(/\D/g, ""),
+                  product_mrp: price.replace(/[^\d.]/g, ""),
                 }));
               }}
-              containerStyle={{ flex: 1, color: "white" }}
+              containerStyle={{ flex: 1 }}
             />
           </View>
 
@@ -394,7 +385,6 @@ const AddProductScreen = () => {
                 product_extra_info: value,
               }));
             }}
-            style={{ color: "white" }}
           />
 
           <CustomButton loading={isLoading} onPress={handleSaveProduct}>
