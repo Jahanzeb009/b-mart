@@ -83,7 +83,9 @@ export const ProductRenderItem = memo(
           flexDirection: "row",
           borderWidth: 1,
           borderRadius: 10,
-          borderColor: colors.border,
+          gap: 10,
+          borderColor: colors.primary + 50,
+          overflow: "hidden",
         }}
       >
         <Animated.View sharedTransitionTag={`${item.id}`}>
@@ -111,9 +113,25 @@ export const ProductRenderItem = memo(
           )}
         </Animated.View>
 
-        <View style={{ flex: 1, paddingVertical: 5 }}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            // backgroundColor: "blue",
+          }}
+        >
           {/* title */}
-          <View
+          <Text
+            variant="titleMedium"
+            style={{
+              // textAlign: "center",
+              color: colors.text,
+              fontWeight: "bold",
+            }}
+          >
+            {item.product_name}
+          </Text>
+          {/* <View
             style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
           >
             <TextTicker
@@ -131,9 +149,9 @@ export const ProductRenderItem = memo(
             >
               {item.product_name}
             </TextTicker>
-          </View>
+          </View> */}
 
-          <View
+          {/* <View
             style={{ flexDirection: "row", justifyContent: "space-evenly" }}
           >
             <Text style={{ color: colors.text, textAlign: "center" }}>
@@ -172,6 +190,33 @@ export const ProductRenderItem = memo(
               {formatCurrency(+item.product_mrp)}
             </Text>
           </View>
+          */}
+        </View>
+
+        <View
+          style={{
+            paddingRight: 15,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Text
+            variant="bodySmall"
+            style={{ color: colors.text, textAlign: "center", opacity: 0.8 }}
+          >
+            (MRP)
+          </Text>
+          <Text
+            style={{
+              color: colors.text,
+              opacity: 0.9,
+              fontWeight: "bold",
+              textAlign: "center",
+            }}
+            variant="bodyMedium"
+          >
+            {formatCurrency(+item.product_mrp)}
+          </Text>
         </View>
 
         {isEditingMode && (

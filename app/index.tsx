@@ -31,6 +31,7 @@ import {
 } from "react-native-paper";
 import {
   deleteProducts,
+  ErrorLog,
   getCategories,
   getCategoriesRealTime,
   getProductList,
@@ -39,7 +40,7 @@ import {
 import { ProductRenderItem } from "@/components/ProductRenderItem";
 import * as Haptics from "expo-haptics";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { ProductTypes } from "@/src/types";
+import { ProductCategoryTypes, ProductTypes } from "@/src/types";
 import { SheetManager } from "react-native-actions-sheet";
 import Fuse from "fuse.js";
 import { RectButton } from "react-native-gesture-handler";
@@ -111,9 +112,7 @@ const Home = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isEditingMode, setIsEditingMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [categories, setCategories] = useState<{ key: string; id: string }[]>(
-    []
-  );
+  const [categories, setCategories] = useState<ProductCategoryTypes[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<{
     key: string;
     id: string;
@@ -167,10 +166,9 @@ const Home = () => {
     const categoriesSub = getCategoriesRealTime((category) => {
       try {
         setCategories(category);
-        console.log({ category });
         AsyncStorage.setItem("@categories", JSON.stringify(category));
       } catch (e) {
-        console.log({ e });
+        ErrorLog("categoriesSub = getCategoriesRealTime", e);
       } finally {
         setIsLoading(false);
       }
@@ -180,14 +178,14 @@ const Home = () => {
         setProductList(products);
         setupFuse(products);
       } catch (e) {
-        console.log({ e });
+        ErrorLog("productSub = getProductsRealTime", e);
       } finally {
         setIsLoading(false);
       }
     });
     return () => {
-      productSub();
-      categoriesSub();
+      productSub?.();
+      categoriesSub?.();
     };
   }, []);
 

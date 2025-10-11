@@ -8,7 +8,10 @@ import {
   updateDoc,
 } from "@react-native-firebase/firestore";
 import { db } from "./firebase";
-import { ProductTypes } from "../types";
+import { ProductCategoryTypes, ProductTypes } from "../types";
+
+export const ErrorLog = (name: string, error: unknown) =>
+  console.log(`${name} -> `, error);
 
 const COLLECTIONS = {
   products: "products",
@@ -21,7 +24,7 @@ const addCategory = async (key: string) => {
       key,
     });
   } catch (e) {
-    console.log("Error adding category", e);
+    ErrorLog("Error adding category", e);
   }
 };
 
@@ -35,7 +38,7 @@ const getCategories = async () => {
     }));
     return categories;
   } catch (error) {
-    console.error("Error fetching categories:", error);
+    ErrorLog("Error fetching categories", error);
     return [];
   }
 };
@@ -48,32 +51,48 @@ const deleteProducts = async (products: Set<string>) => {
 
     return true;
   } catch (error) {
-    console.log({ error });
+    ErrorLog("deleteProducts error", error);
     return false;
   }
 };
 
 const getProductsRealTime = (cb: (products: ProductTypes[]) => void) => {
-  const sub = onSnapshot(collection(db, COLLECTIONS.products), (snapshot) => {
-    const products = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    cb?.(products as ProductTypes[]);
-  });
+  try {
+    const sub = onSnapshot(collection(db, COLLECTIONS.products), (snapshot) => {
+      const products =
+        snapshot?.docs?.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) ?? [];
+      cb?.(products as ProductTypes[]);
+    });
 
-  return sub;
+    return sub;
+  } catch (e) {
+    ErrorLog("getProductsRealTime", e);
+    return null;
+  }
 };
-const getCategoriesRealTime = (cb: (products: ProductTypes[]) => void) => {
-  const sub = onSnapshot(collection(db, COLLECTIONS.categories), (snapshot) => {
-    const products = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    cb?.(products as ProductTypes[]);
-  });
+const getCategoriesRealTime = (
+  cb: (products: ProductCategoryTypes[]) => void
+) => {
+  try {
+    const sub = onSnapshot(
+      collection(db, COLLECTIONS.categories),
+      (snapshot) => {
+        const products = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        cb?.(products as ProductCategoryTypes[]);
+      }
+    );
 
-  return sub;
+    return sub;
+  } catch (e) {
+    ErrorLog("getCategoriesRealTime", e);
+    return null;
+  }
 };
 
 const getProductList = async () => {
@@ -86,7 +105,7 @@ const getProductList = async () => {
     }));
     return products as ProductTypes[];
   } catch (error) {
-    console.error("Error fetching products:", error);
+    ErrorLog("Error fetching products", error);
     return [];
   }
 };
@@ -101,7 +120,7 @@ const updateProduct = async (
 
     return true;
   } catch (error) {
-    console.error("Error updating product:", error);
+    ErrorLog("Error updating product", error);
     return false;
   }
 };
@@ -112,7 +131,7 @@ const saveProduct = async (data: Omit<ProductTypes, "id">) => {
     await addDoc(ref, data);
     return true;
   } catch (error) {
-    console.error("Error saving product:", error);
+    ErrorLog("Error saving product", error);
     return false;
   }
 };
@@ -124,7 +143,7 @@ const deleteProduct = async (productId: string) => {
 
     return true;
   } catch (error) {
-    console.error("Error deleting product:", error);
+    ErrorLog("Error deleting product", error);
     return false;
   }
 };

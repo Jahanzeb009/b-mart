@@ -8,7 +8,12 @@ interface ProductTypes {
   product_mrp: string;
   last_updated_at: Timestamp | null;
   product_category: string;
-  product_extra_info: string
+  product_extra_info: string;
+}
+
+interface ProductCategoryTypes {
+  id: string;
+  key: string;
 }
 
 export { ProductTypes };

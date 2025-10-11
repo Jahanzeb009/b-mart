@@ -12,9 +12,6 @@ B-Mart is a simple mobile application built with **React Native (Expo)** to mana
 - **React Native (with Expo)**
 - **Fuse.js** for searching
 
-## 🎥 App Demo
-[Watch the demo video](./screenshots/recording.mp4)
-
 ## Screenshots
 | Home Screen | Product Details | Edit/Update |
 |-------------|-----------------|-------------|
