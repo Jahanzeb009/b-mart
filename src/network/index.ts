@@ -6,7 +6,7 @@ import {
   getDocs,
   onSnapshot,
   updateDoc,
-} from "@react-native-firebase/firestore";
+} from "firebase/firestore";
 import { db } from "./firebase";
 import { ProductCategoryTypes, ProductTypes } from "../types";
 

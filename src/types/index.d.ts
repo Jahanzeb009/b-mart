@@ -1,4 +1,5 @@
-import { Timestamp } from "@react-native-firebase/firestore";
+// import { Timestamp } from "@react-native-firebase/firestore";
+import { Timestamp } from "firebase/firestore";
 
 interface ProductTypes {
   id: string;
@@ -16,4 +17,4 @@ interface ProductCategoryTypes {
   key: string;
 }
 
-export { ProductTypes };
+export { ProductTypes, ProductCategoryTypes };

@@ -3,9 +3,9 @@ import * as ImagePicker from "expo-image-picker";
 import { forwardRef, useEffect, useRef, useState } from "react";
 import { useTheme } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { getDownloadURL, putFile, ref } from "@react-native-firebase/storage";
+import { getDownloadURL, uploadString, ref } from "firebase/storage";
 import { addCategory, saveProduct, updateProduct } from "@/src/network";
-import { Timestamp } from "@react-native-firebase/firestore";
+import { Timestamp } from "firebase/firestore";
 import { ProductTypes } from "@/src/types";
 import { storage } from "@/src/network/firebase";
 import { router, Stack, useLocalSearchParams } from "expo-router";
@@ -143,9 +143,8 @@ const AddProductScreen = () => {
       const isURL = isHttpsUrl(productInfo.product_image);
       let product_image_url = "";
       if (productInfo.product_image && !isURL) {
-        console.log(productInfo.product_image);
-        await putFile(storageRef, productInfo.product_image);
-        console.log(storageRef.fullPath);
+        // await putFile(storageRef, productInfo.product_image);
+        await uploadString(storageRef, productInfo.product_image, "base64");
         product_image_url = await getDownloadURL(storageRef);
       }
       console.log({ product_image_url });
@@ -181,6 +180,7 @@ const AddProductScreen = () => {
           cameraType: ImagePicker.CameraType.back,
           allowsEditing: true,
           quality: 0.5,
+          base64: true,
         });
 
         if (!result.canceled) {
@@ -188,16 +188,17 @@ const AddProductScreen = () => {
           inputRefs.current?.product_name.focus();
           setProductInfo((pre) => ({
             ...pre,
-            product_image: result.assets[0].uri,
+            product_image: `data:${
+              result.assets[0].mimeType ?? "image/png"
+            };base64,${result.assets[0].base64!}`,
           }));
-
-          await putFile(storageRef, result.assets[0].uri);
         }
       } else if (val === "pick_photo") {
         let result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: "images",
           allowsEditing: true,
           aspect: [4, 3],
+          base64: true,
           quality: 1,
         });
         if (!result.canceled) {
@@ -205,15 +206,11 @@ const AddProductScreen = () => {
           inputRefs.current?.product_name.focus();
           setProductInfo((pre) => ({
             ...pre,
-            product_image: result.assets[0].uri,
+            ct_image: `data:${
+              result.assets[0].mimeType ?? "image/png"
+            };base64,${result.assets[0].base64!}`,
           }));
 
-          // console.log(result.assets[0].uri)
-
-          // setProductInfo((pre) => ({
-          //   ...pre,
-          //   product_image: url,
-          // }));
         }
       }
       //  else {

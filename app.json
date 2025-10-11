@@ -16,7 +16,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bmart.product.list",
-      "googleServicesFile": "./GoogleService-Info.plist",
       "appleTeamId": "4774WZNLU4"
     },
     "android": {
@@ -26,7 +25,6 @@
       },
       "edgeToEdgeEnabled": true,
       "permissions": ["android.permission.RECORD_AUDIO"],
-      "googleServicesFile": "./google-services.json",
       "package": "com.bmart.product.list"
     },
     "web": {
@@ -36,19 +34,10 @@
     },
     "plugins": [
       "expo-router",
-      "@react-native-firebase/app",
       [
         "expo-image-picker",
         {
           "photosPermission": "The app accesses your photos to let you share them with your friends."
-        }
-      ],
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "useFrameworks": "static"
-          }
         }
       ],
       "expo-font",
