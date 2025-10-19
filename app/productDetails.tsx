@@ -8,13 +8,12 @@ import {
 import React from "react";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useTheme } from "@react-navigation/native";
-import { Button, Divider, HelperText, Text } from "react-native-paper";
+import { Divider, HelperText, Text } from "react-native-paper";
 import { ProductTypes } from "@/src/types";
 import CustomImage from "@/components/CustomImage";
 import { generateImageUrl } from "@/components/GenerateImageUrl";
 import { selectionAsync } from "expo-haptics";
 import { formatCurrency } from "@/src/utils";
-import Animated from "react-native-reanimated";
 import CustomButton from "@/components/CustomButton";
 
 const ProductDetails = () => {

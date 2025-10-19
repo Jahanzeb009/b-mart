@@ -17,7 +17,6 @@ type CustomTextInputProps = {
   containerStyle?: ViewStyle;
 } & TextInput["props"];
 
-// const CustomInput = forwardRef<TextInputProps["ref"], CustomTextInputProps>(
 const CustomInput = forwardRef<TextInput, CustomTextInputProps>(
   ({ label, containerStyle, style, ...rest }, ref) => {
     const { colors } = useTheme();
@@ -68,22 +67,10 @@ const CustomInput = forwardRef<TextInput, CustomTextInputProps>(
             style={[
               {
                 color: colors.text,
-
-                // height:'100%'
-                // padding: 10,
+                outline: "transparent",
               },
               style,
             ]}
-            // label={label}
-            // theme={{
-            //   colors: {
-            //     primary: colors.primary,
-            //     background: colors.card,
-            //     onSurface: colors.text,
-            //     outline: "grey",
-            //     onSurfaceVariant: "grey",
-            //   },
-            // }}
             {...rest}
           />
         </Pressable>

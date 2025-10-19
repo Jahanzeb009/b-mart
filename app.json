@@ -1,11 +1,12 @@
 {
   "expo": {
-    "name": "bMartRateList",
-    "slug": "bMartRateList",
+    "name": "B Mart",
+    "slug": "b-mart",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "bmartratelist",
+    "owner": "b-mart",
+    "scheme": "bmart",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -24,11 +25,11 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
       "permissions": ["android.permission.RECORD_AUDIO"],
       "package": "com.bmart.product.list"
     },
     "web": {
-      "bundler": "metro",
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
@@ -41,10 +42,29 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "backgroundColor": "#000000"
+          }
+        }
+      ]
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3a956cf9-418d-4009-8083-20beafe9a204"
+      }
     }
   }
 }

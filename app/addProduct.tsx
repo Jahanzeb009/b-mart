@@ -22,6 +22,7 @@ import CustomInput from "@/components/CustomInput";
 import CustomButton from "@/components/CustomButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import MenuItem from "@/components/CustomMenu";
 
 const AddProductScreen = () => {
   const { colors } = useTheme();
@@ -201,16 +202,16 @@ const AddProductScreen = () => {
           base64: true,
           quality: 1,
         });
+
         if (!result.canceled) {
           // @ts-ignore
           inputRefs.current?.product_name.focus();
           setProductInfo((pre) => ({
             ...pre,
-            ct_image: `data:${
+            product_image: `data:${
               result.assets[0].mimeType ?? "image/png"
             };base64,${result.assets[0].base64!}`,
           }));
-
         }
       }
       //  else {
@@ -408,27 +409,4 @@ const styles = StyleSheet.create({
     height: 1,
     width: "80%",
   },
-});
-
-const MenuItem = forwardRef<
-  MenuComponentRef,
-  {
-    data: MenuAction[];
-    title?: string;
-    onValueSelect?: (value: string) => void;
-    children: React.ReactNode;
-  }
->(({ title, data, onValueSelect, children }, ref) => {
-  return (
-    <MenuView
-      ref={ref}
-      title={title}
-      // themeVariant=""
-      onPressAction={({ nativeEvent }) => onValueSelect?.(nativeEvent.event)}
-      actions={data}
-      shouldOpenOnLongPress={false}
-    >
-      {children}
-    </MenuView>
-  );
 });

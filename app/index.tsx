@@ -1,18 +1,13 @@
 import {
   View,
   FlatList,
-  Pressable,
   useWindowDimensions,
   ActivityIndicator,
-  Vibration,
-  LayoutAnimation,
-  ScrollView,
 } from "react-native";
 import React, {
   forwardRef,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -20,11 +15,8 @@ import { useTheme } from "@react-navigation/native";
 import { router, Stack, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  Button,
   Chip,
   FAB,
-  HelperText,
-  Icon,
   IconButton,
   Searchbar,
   Text,
@@ -34,34 +26,21 @@ import {
   ErrorLog,
   getCategories,
   getCategoriesRealTime,
-  getProductList,
   getProductsRealTime,
 } from "@/src/network";
 import { ProductRenderItem } from "@/components/ProductRenderItem";
 import * as Haptics from "expo-haptics";
-import { useHeaderHeight } from "@react-navigation/elements";
 import { ProductCategoryTypes, ProductTypes } from "@/src/types";
 import { SheetManager } from "react-native-actions-sheet";
 import Fuse from "fuse.js";
 import { RectButton } from "react-native-gesture-handler";
 import { FlashList } from "@shopify/flash-list";
-import StaggeredList from "@mindinventory/react-native-stagger-view";
-// console.log(isSearchBarAvailableForCurrentPlatform)
-import MasonryList from "@react-native-seoul/masonry-list";
-import { collection, onSnapshot } from "@react-native-firebase/firestore";
-import { db } from "@/src/network/firebase";
 import Animated, {
-  FadeIn,
-  FadeInDown,
   FadeInUp,
-  FadeOut,
-  FadeOutDown,
-  FadeOutLeft,
   FadeOutUp,
   LinearTransition,
 } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { LegendList } from "@legendapp/list";
 
 const formatData = (
   data: (ProductTypes | null)[],
