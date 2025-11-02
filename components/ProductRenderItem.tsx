@@ -1,10 +1,16 @@
 import { ProductTypes } from "@/src/types";
-import { formatCurrency } from "@/src/utils";
+import { formatCurrency, useDeviceType } from "@/src/utils";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@react-navigation/native";
 import { router } from "expo-router";
 import { memo, useEffect } from "react";
-import { Image, StyleSheet, useWindowDimensions, View } from "react-native";
+import {
+  Image,
+  Platform,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { Card, Divider, HelperText, Text } from "react-native-paper";
 import * as Haptics from "expo-haptics";
 import CustomImage from "./CustomImage";
@@ -32,6 +38,8 @@ export const ProductRenderItem = memo(
 
     const { height, width } = useWindowDimensions();
 
+    const { currentDevice } = useDeviceType();
+
     const PADDING = 15;
     const GAP = 0;
     // const IMAGE_SIZE = (width - PADDING * 2 - 10 - 5) / 2;
@@ -53,6 +61,141 @@ export const ProductRenderItem = memo(
     // const aspectRatio = w / h;
     // const displayWidth = IMAGE_SIZE;
     // const displayHeight = displayWidth / aspectRatio;
+
+    // if (Platform.OS === "web") {
+    //   return (
+    //     <Card
+    //       mode="contained"
+    //       theme={{
+    //         colors: {
+    //           surfaceVariant: colors.card,
+    //         },
+    //       }}
+    //       onLongPress={onLongPress}
+    //       onPress={() => {
+    //         if (isEditingMode) {
+    //           onPress?.(item.id);
+    //           return;
+    //         }
+    //         Haptics.selectionAsync();
+    //         router.navigate({
+    //           pathname: "/productDetails",
+    //           params: {
+    //             ...item,
+    //             categories: JSON.stringify(categories),
+    //             last_updated_at: item.last_updated_at
+    //               ?.toDate()
+    //               .toLocaleString(),
+    //           },
+    //         });
+    //       }}
+    //       style={{ marginTop: 10 }}
+    //       contentStyle={{
+    //         flexDirection: "row",
+    //         borderWidth: 1,
+    //         borderRadius: 10,
+    //         gap: 10,
+    //         borderColor: colors.primary + 50,
+    //         overflow: "hidden",
+    //       }}
+    //     >
+    //       <View>
+    //         {item.product_image ? (
+    //           <CustomImage
+    //             width={IMAGE_SIZE}
+    //             height={IMAGE_SIZE}
+    //             // width={IMAGE_SIZE}
+    //             // height={displayHeight}
+    //             source={{ uri: item.product_image }}
+    //             resizeMode="contain"
+    //             // style={{
+    //             //   minHeight: IMAGE_SIZE,
+    //             //   minWidth: IMAGE_SIZE,
+    //             // }}
+    //           />
+    //         ) : (
+    //           <CustomImage
+    //             source={require("../assets/images/icon_grey.png")}
+    //             width={IMAGE_SIZE}
+    //             height={IMAGE_SIZE}
+    //             resizeMode="cover"
+    //             // style={{ minHeight: IMAGE_SIZE, minWidth: IMAGE_SIZE }}
+    //           />
+    //         )}
+    //       </View>
+
+    //       <View
+    //         style={{
+    //           flex: 1,
+    //           justifyContent: "center",
+    //           // backgroundColor: "blue",
+    //         }}
+    //       >
+    //         {/* title */}
+    //         <Text
+    //           variant="titleMedium"
+    //           style={{
+    //             // textAlign: "center",
+    //             color: colors.text,
+    //             fontWeight: "bold",
+    //           }}
+    //         >
+    //           {item.product_name}
+    //         </Text>
+    //       </View>
+
+    //       <View
+    //         style={{
+    //           paddingRight: 15,
+    //           justifyContent: "center",
+    //           alignItems: "center",
+    //         }}
+    //       >
+    //         <Text
+    //           variant="bodySmall"
+    //           style={{ color: colors.text, textAlign: "center", opacity: 0.8 }}
+    //         >
+    //           (MRP)
+    //         </Text>
+    //         <Text
+    //           style={{
+    //             color: colors.text,
+    //             opacity: 0.9,
+    //             fontWeight: "bold",
+    //             textAlign: "center",
+    //           }}
+    //           variant="bodyMedium"
+    //         >
+    //           {formatCurrency(+item.product_mrp)}
+    //         </Text>
+    //       </View>
+
+    //       {isEditingMode && (
+    //         <View
+    //           pointerEvents="none"
+    //           style={[
+    //             StyleSheet.absoluteFillObject,
+    //             {
+    //               padding: 15,
+    //               alignItems: "flex-end",
+    //               backgroundColor: dark ? "#0006" : "#fff6",
+    //             },
+    //           ]}
+    //         >
+    //           <MaterialCommunityIcons
+    //             size={24}
+    //             color={colors.text}
+    //             name={
+    //               isSelected
+    //                 ? "checkbox-marked-circle"
+    //                 : "checkbox-blank-circle-outline"
+    //             }
+    //           />
+    //         </View>
+    //       )}
+    //     </Card>
+    //   );
+    // }
 
     return (
       <Card
@@ -78,7 +221,11 @@ export const ProductRenderItem = memo(
             },
           });
         }}
-        style={{ marginTop: 10 }}
+        style={{
+          marginTop: 10,
+          flex: 1,
+          marginRight: index % 2 === 0 && currentDevice !== "mobile" ? 10 : 0,
+        }}
         contentStyle={{
           flexDirection: "row",
           borderWidth: 1,
@@ -88,7 +235,7 @@ export const ProductRenderItem = memo(
           overflow: "hidden",
         }}
       >
-        <Animated.View sharedTransitionTag={`${item.id}`}>
+        <Animated.View>
           {item.product_image ? (
             <CustomImage
               width={IMAGE_SIZE}
@@ -97,10 +244,10 @@ export const ProductRenderItem = memo(
               // height={displayHeight}
               source={{ uri: item.product_image }}
               resizeMode="contain"
-              style={{
-                minHeight: IMAGE_SIZE,
-                minWidth: IMAGE_SIZE,
-              }}
+              // style={{
+              //   minHeight: IMAGE_SIZE,
+              //   minWidth: IMAGE_SIZE,
+              // }}
             />
           ) : (
             <CustomImage
@@ -108,7 +255,7 @@ export const ProductRenderItem = memo(
               width={IMAGE_SIZE}
               height={IMAGE_SIZE}
               resizeMode="cover"
-              style={{ minHeight: IMAGE_SIZE, minWidth: IMAGE_SIZE }}
+              // style={{ minHeight: IMAGE_SIZE, minWidth: IMAGE_SIZE }}
             />
           )}
         </Animated.View>

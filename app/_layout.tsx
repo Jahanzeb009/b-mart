@@ -48,6 +48,7 @@ function RootLayoutNav() {
                 options={{
                   title: "B Mart",
                   headerShadowVisible: false,
+                  headerTitleAlign: "center",
                 }}
               />
               <Stack.Screen name="addProduct" />

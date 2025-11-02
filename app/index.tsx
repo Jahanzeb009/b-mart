@@ -3,6 +3,7 @@ import {
   FlatList,
   useWindowDimensions,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import React, {
   forwardRef,
@@ -14,13 +15,7 @@ import React, {
 import { useTheme } from "@react-navigation/native";
 import { router, Stack, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  Chip,
-  FAB,
-  IconButton,
-  Searchbar,
-  Text,
-} from "react-native-paper";
+import { Chip, FAB, IconButton, Searchbar, Text } from "react-native-paper";
 import {
   deleteProducts,
   ErrorLog,
@@ -35,29 +30,32 @@ import { SheetManager } from "react-native-actions-sheet";
 import Fuse from "fuse.js";
 import { RectButton } from "react-native-gesture-handler";
 import { FlashList } from "@shopify/flash-list";
-import Animated, {
-  FadeInUp,
-  FadeOutUp,
-  LinearTransition,
-} from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useDeviceType } from "@/src/utils";
 
-const formatData = (
-  data: (ProductTypes | null)[],
-  numColumns: number
-): (ProductTypes | null)[] => {
-  const newData = [...data];
-  const remainder = newData.length % numColumns;
+const List = Platform.select({
+  android: FlashList,
+  ios: FlashList,
+  // @ts-ignore
+  web: FlatList,
+});
 
-  if (remainder !== 0) {
-    const itemsToAdd = numColumns - remainder;
-    for (let i = 0; i < itemsToAdd; i++) {
-      newData.push(null);
-    }
-  }
+// const formatData = (
+//   data: (ProductTypes | null)[],
+//   numColumns: number
+// ): (ProductTypes | null)[] => {
+//   const newData = [...data];
+//   const remainder = newData.length % numColumns;
 
-  return newData;
-};
+//   if (remainder !== 0) {
+//     const itemsToAdd = numColumns - remainder;
+//     for (let i = 0; i < itemsToAdd; i++) {
+//       newData.push(null);
+//     }
+//   }
+
+//   return newData;
+// };
 
 const options = {
   keys: ["product_name", "product_invoice", "product_mrp", "product_category"],
@@ -83,6 +81,8 @@ const Home = () => {
 
   const inset = useSafeAreaInsets();
 
+  const { currentDevice } = useDeviceType();
+
   let { width } = useWindowDimensions();
   width -= 30 + 15;
 
@@ -92,13 +92,11 @@ const Home = () => {
   const [isEditingMode, setIsEditingMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [categories, setCategories] = useState<ProductCategoryTypes[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<{
-    key: string;
-    id: string;
-  }>({
-    id: "all",
-    key: "all",
-  });
+  const [selectedCategory, setSelectedCategory] =
+    useState<ProductCategoryTypes>({
+      id: "all",
+      key: "all",
+    });
 
   const toggleSelect = (id: string) => {
     Haptics.selectionAsync(); // light tap feedback
@@ -113,33 +111,6 @@ const Home = () => {
       return newSet;
     });
   };
-
-  // const getProducts = async () => {
-  //   try {
-  //     setIsLoading(true);
-  //     const data = await getProductList();
-  //   } catch (e) {
-  //     console.log({ e });
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-  const _getCategories = async () => {
-    try {
-      const data = await getCategories();
-
-      setCategories(data);
-    } catch (error) {
-      console.log("error fetching categories", error);
-    }
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      // getProducts();
-      _getCategories();
-    }, [])
-  );
 
   useEffect(() => {
     const categoriesSub = getCategoriesRealTime((category) => {
@@ -162,6 +133,7 @@ const Home = () => {
         setIsLoading(false);
       }
     });
+
     return () => {
       productSub?.();
       categoriesSub?.();
@@ -242,10 +214,9 @@ const Home = () => {
     <>
       <Stack.Screen
         options={{
-          title: "B Mart",
           headerRight(props) {
             return (
-              <View style={{ flexDirection: "row", gap: 10 }}>
+              <View style={{ flexDirection: "row", gap: 10, marginRight: 10 }}>
                 {isLoading && <ActivityIndicator color={colors.text} />}
 
                 {isEditingMode && (
@@ -346,11 +317,8 @@ const Home = () => {
           },
         }}
       />
-      <Animated.View layout={LinearTransition} style={{ flex: 1 }}>
-        <Animated.View
-          layout={LinearTransition}
-          style={{ backgroundColor: colors.card, paddingVertical: 10 }}
-        >
+      <View style={{ flex: 1 }}>
+        <View style={{ backgroundColor: colors.card, paddingVertical: 10 }}>
           <ChipsContainer
             ref={flatRef}
             categories={categories}
@@ -360,37 +328,38 @@ const Home = () => {
               setSelectedCategory(item);
             }}
           />
+          {/* <Animated.View entering={FadeInUp} exiting={FadeOutUp}> */}
           {showSearch && (
-            <Animated.View entering={FadeInUp} exiting={FadeOutUp}>
-              <Searchbar
-                placeholder="Search Product"
-                onChangeText={setQueryText}
-                value={queryText}
-                placeholderTextColor={"grey"}
-                autoFocus
-                keyboardAppearance="default"
-                style={{
-                  marginTop: 15,
-                  marginHorizontal: 15,
-                  backgroundColor: colors.background,
-                }}
-                inputStyle={{
-                  color: colors.text,
-                }}
-                onClearIconPress={() => {
-                  setShowSearch(false);
-                  setQueryText("");
-                }}
-              />
-            </Animated.View>
+            <Searchbar
+              placeholder="Search Product"
+              onChangeText={setQueryText}
+              value={queryText}
+              placeholderTextColor={"grey"}
+              autoFocus
+              keyboardAppearance="default"
+              style={{
+                marginTop: 15,
+                marginHorizontal: 15,
+                backgroundColor: colors.background,
+              }}
+              inputStyle={{
+                color: colors.text,
+              }}
+              onClearIconPress={() => {
+                setShowSearch(false);
+                setQueryText("");
+              }}
+            />
           )}
-        </Animated.View>
+          {/* </Animated.View> */}
+        </View>
 
-        <Animated.View layout={LinearTransition} style={{ flex: 1 }}>
-          <FlashList
+        <View style={{ flex: 1 }}>
+          <List
             data={filterData()}
+            key={currentDevice !== "mobile" ? "web_list" : "mobile_list"}
+            numColumns={currentDevice !== "mobile" ? 2 : 1}
             keyExtractor={(item): string => item.id}
-            // numColumns={2}
             ListEmptyComponent={
               <View
                 style={{
@@ -471,7 +440,7 @@ const Home = () => {
               paddingBottom: inset.bottom + 15,
             }}
           /> */}
-        </Animated.View>
+        </View>
 
         <FAB
           icon={isEditingMode ? "delete" : "plus"}
@@ -490,66 +459,71 @@ const Home = () => {
           }}
           onPress={onPressFab}
         />
-      </Animated.View>
+      </View>
     </>
   );
 };
 
 export default Home;
 
-const ChipsContainer = forwardRef(
-  ({ categories, onPress, selectedCategory }, ref) => {
-    const { colors } = useTheme();
+const ChipsContainer = forwardRef<
+  FlatList,
+  {
+    categories: ProductCategoryTypes[];
+    onPress: (item: ProductCategoryTypes) => void;
+    selectedCategory: ProductCategoryTypes;
+  }
+>(({ categories, onPress, selectedCategory }, ref) => {
+  const { colors } = useTheme();
 
-    return (
-      <FlatList
-        horizontal
-        ref={ref}
-        data={[{ key: "all", id: "all" }, ...categories]}
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{
-          gap: 10,
-          paddingHorizontal: 15,
-          // paddingTop: headerHeight + 15,
-        }}
-        renderItem={({ item, index }) => {
-          return (
-            <RectButton
+  return (
+    <FlatList
+      horizontal
+      ref={ref}
+      data={[{ key: "all", id: "all" }, ...categories]}
+      showsHorizontalScrollIndicator={false}
+      keyExtractor={(item) => item.id}
+      contentContainerStyle={{
+        gap: 10,
+        paddingHorizontal: 15,
+        // paddingTop: headerHeight + 15,
+      }}
+      renderItem={({ item, index }) => {
+        return (
+          <RectButton
+            style={{
+              borderRadius: 100,
+            }}
+            onPress={() => onPress(item)}
+          >
+            <Chip
+              textStyle={{ textTransform: "capitalize" }}
               style={{
-                borderRadius: 100,
+                borderWidth: 1,
+                borderColor:
+                  selectedCategory?.id === item.id
+                    ? colors.primary
+                    : colors.border,
               }}
-              onPress={() => onPress(item)}
-            >
-              <Chip
-                textStyle={{ textTransform: "capitalize" }}
-                style={{
-                  borderWidth: 1,
-                  borderColor:
+              // theme={{ colors: { primary: colors.primary } }}
+              // selectedColor=""
+              theme={{
+                roundness: 5,
+                colors: {
+                  secondaryContainer:
                     selectedCategory?.id === item.id
                       ? colors.primary
-                      : colors.border,
-                }}
-                // theme={{ colors: { primary: colors.primary } }}
-                // selectedColor=""
-                theme={{
-                  roundness: 5,
-                  colors: {
-                    secondaryContainer:
-                      selectedCategory?.id === item.id
-                        ? colors.primary
-                        : colors.card,
-                    onSecondaryContainer:
-                      selectedCategory?.id === item.id ? "white" : colors.text,
-                  },
-                }}
-              >
-                {item.key}
-              </Chip>
-            </RectButton>
-          );
-        }}
-      />
-    );
-  }
-);
+                      : colors.card,
+                  onSecondaryContainer:
+                    selectedCategory?.id === item.id ? "white" : colors.text,
+                },
+              }}
+            >
+              {item.key}
+            </Chip>
+          </RectButton>
+        );
+      }}
+    />
+  );
+});

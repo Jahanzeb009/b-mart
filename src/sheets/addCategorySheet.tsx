@@ -52,9 +52,9 @@ const AddCategorySheet = (props: SheetProps<"add-category-sheet">) => {
           placeholder="Enter category name"
           value={categoryName}
           autoFocus
+          pressableStyle={{ flex: undefined }}
           onChangeText={(value) => setCategoryName(value.toLowerCase())}
           returnKeyType="done"
-          style={{ backgroundColor: colors.border }}
           onSubmitEditing={() => {
             SheetManager.hide("add-category-sheet", {
               payload: categoryName,

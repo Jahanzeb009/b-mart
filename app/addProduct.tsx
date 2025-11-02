@@ -3,7 +3,7 @@ import * as ImagePicker from "expo-image-picker";
 import { forwardRef, useEffect, useRef, useState } from "react";
 import { useTheme } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { getDownloadURL, uploadString, ref } from "firebase/storage";
+import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
 import { addCategory, saveProduct, updateProduct } from "@/src/network";
 import { Timestamp } from "firebase/firestore";
 import { ProductTypes } from "@/src/types";
@@ -134,7 +134,11 @@ const AddProductScreen = () => {
         !product_invoice.length ||
         !product_mrp.length
       ) {
-        Alert.alert("Missing", "Fill all the details");
+        if (Platform.OS === "web") {
+          alert(`Missing\nFill all the details`);
+        } else {
+          Alert.alert("Missing", "Fill all the details");
+        }
         return;
       }
 
@@ -145,7 +149,20 @@ const AddProductScreen = () => {
       let product_image_url = "";
       if (productInfo.product_image && !isURL) {
         // await putFile(storageRef, productInfo.product_image);
-        await uploadString(storageRef, productInfo.product_image, "base64");
+        let base64String = productInfo.product_image;
+
+        // Remove the data URL prefix if present
+        if (base64String.startsWith("data:image")) {
+          base64String = base64String.replace(
+            /^data:image\/[a-z]+;base64,/,
+            ""
+          );
+        }
+
+        const response = await fetch(productInfo.product_image);
+        const blob = await response.blob();
+
+        await uploadBytesResumable(storageRef, blob);
         product_image_url = await getDownloadURL(storageRef);
       }
       console.log({ product_image_url });
