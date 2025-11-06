@@ -1,12 +1,13 @@
-import { View } from "react-native";
 import React from "react";
 import ActionSheet, {
   SheetManager,
   SheetProps,
 } from "react-native-actions-sheet";
 import { useTheme } from "@react-navigation/native";
-import { Chip, Text } from "react-native-paper";
+import { Chip } from "react-native-paper";
 import { selectionAsync } from "expo-haptics";
+import { Text } from "@/components/ui/text";
+import { Box } from "@/components/ui/box";
 
 const ShowAllCategoriesSheet = (
   props: SheetProps<"show-all-categories-sheet">
@@ -17,6 +18,7 @@ const ShowAllCategoriesSheet = (
     <ActionSheet
       gestureEnabled
       id={props.sheetId}
+      statusBarTranslucent
       containerStyle={{
         backgroundColor: colors.border,
         paddingTop: 15,
@@ -25,18 +27,15 @@ const ShowAllCategoriesSheet = (
       }}
       indicatorStyle={{ backgroundColor: colors.card }}
     >
-      <View style={{ padding: 15, gap: 15 }}>
-        <Text
-          style={{ color: colors.text, fontWeight: "bold" }}
-          variant="titleLarge"
-        >
+      <Box className="p-5 gap-5">
+        <Text style={{ color: colors.text, fontWeight: "bold" }} size="2xl">
           Select Category
         </Text>
 
-        <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
+        <Box className="flex-row gap-4 flex-wrap">
           {payload?.categories.map((item, i) => {
             return (
-              <View key={i}>
+              <Box key={i}>
                 <Chip
                   textStyle={{ textTransform: "capitalize" }}
                   onPress={() => {
@@ -69,11 +68,11 @@ const ShowAllCategoriesSheet = (
                 >
                   {item.key}
                 </Chip>
-              </View>
+              </Box>
             );
           })}
-        </View>
-      </View>
+        </Box>
+      </Box>
     </ActionSheet>
   );
 };

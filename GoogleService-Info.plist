@@ -9,7 +9,7 @@
             <key>PLIST_VERSION</key>
             <string>1</string>
             <key>BUNDLE_ID</key>
-            <string>com.bmart.product.list</string>
+            <string>com.scorecard.jumpon</string>
             <key>PROJECT_ID</key>
             <string>b-mart-009</string>
             <key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
             <key>IS_SIGNIN_ENABLED</key>
             <true></true>
             <key>GOOGLE_APP_ID</key>
-            <string>1:214477066669:ios:2c0ae16674f7d5b2fbd124</string>
+            <string>1:214477066669:ios:03571833eaae9821fbd124</string>
         </dict>
     </plist>

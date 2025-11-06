@@ -4,6 +4,7 @@ import {
   useWindowDimensions,
   ActivityIndicator,
   Platform,
+  ScrollView,
 } from "react-native";
 import React, {
   forwardRef,
@@ -15,7 +16,7 @@ import React, {
 import { useTheme } from "@react-navigation/native";
 import { router, Stack, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Chip, FAB, IconButton, Searchbar, Text } from "react-native-paper";
+import { Chip, FAB, IconButton, Searchbar } from "react-native-paper";
 import {
   deleteProducts,
   ErrorLog,
@@ -29,16 +30,20 @@ import { ProductCategoryTypes, ProductTypes } from "@/src/types";
 import { SheetManager } from "react-native-actions-sheet";
 import Fuse from "fuse.js";
 import { RectButton } from "react-native-gesture-handler";
-import { FlashList } from "@shopify/flash-list";
+import { FlashList, FlashListRef } from "@shopify/flash-list";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useDeviceType } from "@/src/utils";
+import { Box } from "@/components/ui/box";
+import { Fab, FabIcon, FabLabel } from "@/components/ui/fab";
+import { Trash2, Plus } from "lucide-react-native";
+import { debounce } from "lodash";
 
-const List = Platform.select({
-  android: FlashList,
-  ios: FlashList,
-  // @ts-ignore
-  web: FlatList,
-});
+// const List = Platform.select({
+//   android: FlashList,
+//   ios: FlashList,
+//   // @ts-ignore
+//   web: FlatList,
+// });
 
 // const formatData = (
 //   data: (ProductTypes | null)[],
@@ -71,11 +76,6 @@ const setupFuse = (data: ProductTypes[]) => {
   fuse = new Fuse(data, options);
 };
 
-export const searchProducts = (query: string): ProductTypes[] => {
-  if (!query.trim()) return originalData; // return original data
-  return fuse.search(query).map((result) => result.item);
-};
-
 const Home = () => {
   const { colors } = useTheme();
 
@@ -97,6 +97,14 @@ const Home = () => {
       id: "all",
       key: "all",
     });
+
+  // const searchProducts = (query: string): ProductTypes[] => {
+  //   return;
+  // };
+
+  const flatRef = useRef<FlatList>(null);
+  const ListRef = useRef<FlashListRef<ProductTypes[]> | null>(null);
+  const ScrollViewRef = useRef<ScrollView | null>(null);
 
   const toggleSelect = (id: string) => {
     Haptics.selectionAsync(); // light tap feedback
@@ -126,6 +134,7 @@ const Home = () => {
     const productSub = getProductsRealTime((products) => {
       try {
         setProductList(products);
+        setFilterData(products);
         setupFuse(products);
       } catch (e) {
         ErrorLog("productSub = getProductsRealTime", e);
@@ -140,46 +149,73 @@ const Home = () => {
     };
   }, []);
 
-  const renderProduct = useCallback(
-    ({ item, index }: { item: ProductTypes; index: number }) => {
-      return (
-        <ProductRenderItem
-          item={item}
-          categories={categories}
-          index={index}
-          isEditingMode={isEditingMode}
-          isSelected={selectedIds.has(item.id)}
-          onPress={toggleSelect}
-          onLongPress={() => setIsEditingMode((pre) => !pre)}
-        />
-      );
-    },
-    [isEditingMode, categories, selectedIds.size]
-  );
-  const flatRef = useRef<FlatList>(null);
-
   const [queryText, setQueryText] = useState("");
 
-  const filterData = useCallback(() => {
-    if (queryText) {
-      // console.log("running querytext...", { queryText });
-      return searchProducts(queryText);
+  const [filterData, setFilterData] = useState<ProductTypes[]>([]);
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce((query) => {
+      setQueryText(query);
+    }, 250),
+    []
+  );
+
+  // Handle text input change
+  const handleSearchChange = (text) => {
+    debouncedSearch(text);
+  };
+
+  // Filter logic: runs when searchQuery, selectedCategory, or data changes
+  useEffect(() => {
+    if (!productList.length || !fuse) return;
+
+    let filtered = [...productList];
+
+    // 1. Category filter
+    if (selectedCategory && selectedCategory.key !== "all") {
+      filtered = filtered.filter(
+        (p) => p.product_category === selectedCategory.key.toLowerCase()
+      );
     }
 
-    // console.log({ queryText });
-
-    if (selectedCategory?.key === "all") {
-      // console.log(
-      // "running selectedCategory?.key === 'all'...",
-      // productList.length
-      // );
-      return productList;
+    // 2. Search with Fuse.js
+    if (queryText.trim()) {
+      const result = fuse.search(queryText);
+      filtered = result.map((r) => r.item);
     }
-    // console.log("running filter...");
-    return productList.filter((product) => {
-      return product.product_category === selectedCategory?.key;
-    });
-  }, [productList, selectedCategory, queryText]);
+
+    setFilterData(filtered);
+  }, [queryText, selectedCategory, productList]);
+
+  // const debounceSearch = useCallback(
+  //   debounce((queryText: string) => {
+  //     console.log("queringggggg");
+  //     if (queryText.trim()) {
+  //       setFilterData(fuse.search(queryText).map((result) => result.item));
+  //       return;
+  //     }
+
+  //     // if (selectedCategory?.key === "all") {
+  //     //   setFilterData(productList);
+  //     //   return;
+  //     // }
+
+  //     setFilterData(
+  //       productList.filter((product) => {
+  //         if (selectedCategory.key === "all") return true;
+  //         return product.product_category === selectedCategory?.key;
+  //       })
+  //     );
+  //   }, 250),
+  //   [productList]
+  // );
+
+  // useEffect(() => {
+  //   return () => {
+  //     debounceSearch.cancel();
+  //   };
+  // }, [debounceSearch]);
 
   const onPressFab = async () => {
     Haptics.selectionAsync(); // light tap feedback
@@ -209,6 +245,24 @@ const Home = () => {
         },
       });
   };
+
+  const renderProduct = useCallback(
+    (item: ProductTypes, index: number) => {
+      return (
+        <ProductRenderItem
+          key={index}
+          item={item}
+          categories={categories}
+          index={index}
+          isEditingMode={isEditingMode}
+          isSelected={selectedIds.has(item.id)}
+          onPress={toggleSelect}
+          onLongPress={() => setIsEditingMode((pre) => !pre)}
+        />
+      );
+    },
+    [isEditingMode, categories, selectedIds.size]
+  );
 
   return (
     <>
@@ -324,16 +378,38 @@ const Home = () => {
             categories={categories}
             selectedCategory={selectedCategory}
             onPress={(item) => {
+              if (item.key !== "all") {
+                setupFuse(
+                  productList.filter((pro) => pro.product_category === item.key)
+                );
+              } else {
+                setupFuse(productList);
+              }
               Haptics.selectionAsync();
               setSelectedCategory(item);
+              if (Platform.OS === "web") {
+                ScrollViewRef.current?.scrollTo(0);
+              } else {
+                ListRef.current?.scrollToTop();
+              }
+              // setFilterData(
+              //   productList.filter((product) => {
+              //     if (selectedCategory.key === "all") return true;
+              //     return product.product_category === selectedCategory?.key;
+              //   })
+              // );
             }}
           />
           {/* <Animated.View entering={FadeInUp} exiting={FadeOutUp}> */}
           {showSearch && (
             <Searchbar
               placeholder="Search Product"
-              onChangeText={setQueryText}
-              value={queryText}
+              onChangeText={
+                handleSearchChange
+                // setQueryText(text);
+                // debounceSearch(text);
+              }
+              // value={queryText}
               placeholderTextColor={"grey"}
               autoFocus
               keyboardAppearance="default"
@@ -347,6 +423,7 @@ const Home = () => {
               }}
               onClearIconPress={() => {
                 setShowSearch(false);
+                setFilterData(productList);
                 setQueryText("");
               }}
             />
@@ -355,7 +432,32 @@ const Home = () => {
         </View>
 
         <View style={{ flex: 1 }}>
-          <List
+          {Platform.OS !== "web" ? (
+            <FlashList
+              ref={ListRef}
+              masonry
+              numColumns={2}
+              data={filterData}
+              renderItem={({ index, item }) => renderProduct(item, index)}
+              keyExtractor={(item) => item.id.toString()}
+              scrollEventThrottle={16}
+              decelerationRate={"fast"}
+              optimizeItemArrangement
+              contentContainerStyle={{ paddingBottom: inset.bottom * 3 }}
+            />
+          ) : (
+            <ScrollView
+              ref={ScrollViewRef}
+              scrollEventThrottle={16}
+              decelerationRate={"fast"}
+            >
+              <VStack className="flex-wrap flex-row">
+                {filterData.map(renderProduct)}
+              </VStack>
+            </ScrollView>
+          )}
+
+          {/* <List
             data={filterData()}
             key={currentDevice !== "mobile" ? "web_list" : "mobile_list"}
             numColumns={currentDevice !== "mobile" ? 2 : 1}
@@ -375,7 +477,16 @@ const Home = () => {
               </View>
             }
             showsVerticalScrollIndicator={false}
-            renderItem={renderProduct}
+            // renderItem={renderProduct}
+            renderItem={({ item }) => {
+              return (
+                <CardView
+                  description={item.product_mrp}
+                  uri={item.product_image}
+                  title={item.product_name}
+                />
+              );
+            }}
             extraData={{ isEditingMode }}
             // columnWrapperStyle={{gap: }}
             contentContainerStyle={{
@@ -384,7 +495,7 @@ const Home = () => {
               padding: 10,
               paddingBottom: inset.bottom + 100,
             }}
-          />
+          /> */}
           {/* <LegendList
             data={filterData()}
             keyExtractor={(item): string => item.id}
@@ -442,23 +553,11 @@ const Home = () => {
           /> */}
         </View>
 
-        <FAB
-          icon={isEditingMode ? "delete" : "plus"}
-          style={{
-            position: "absolute",
-            margin: 16,
-            right: 0,
-            bottom: inset.bottom,
-            borderRadius: 100,
-          }}
-          color={"white"}
-          theme={{
-            colors: {
-              primaryContainer: colors.primary,
-            },
-          }}
-          onPress={onPressFab}
-        />
+        {/* <SkeletonView/>
+
+        <GridView/> */}
+
+        <FabButton icon={isEditingMode ? Trash2 : Plus} onPress={onPressFab} />
       </View>
     </>
   );
@@ -527,3 +626,100 @@ const ChipsContainer = forwardRef<
     />
   );
 });
+
+const FabButton = ({
+  onPress,
+  icon,
+}: {
+  onPress: () => void;
+  icon: React.ElementType;
+}) => {
+  const inset = useSafeAreaInsets();
+  const { colors } = useTheme();
+
+  return (
+    <Fab
+      size="lg"
+      placement="bottom right"
+      isHovered={false}
+      isDisabled={false}
+      isPressed={false}
+      onPress={onPress}
+      style={{ marginBottom: inset.bottom, backgroundColor: colors.primary }}
+    >
+      <FabIcon as={icon} color="white" />
+      {/* <FabLabel>Quick start</FabLabel> */}
+    </Fab>
+  );
+};
+
+import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
+import { HStack } from "@/components/ui/hstack";
+
+function SkeletonView() {
+  return (
+    <Box className="w-[300px] gap-4 p-3 rounded-md bg-background-100">
+      <Skeleton variant="sharp" className="h-[100px]" />
+      <SkeletonText _lines={3} className="h-2" />
+      <HStack className="gap-1 align-middle">
+        <Skeleton variant="circular" className="h-[24px] w-[28px] mr-2" />
+        <SkeletonText _lines={2} gap={1} className="h-2 w-2/5" />
+      </HStack>
+    </Box>
+  );
+}
+
+import { Card } from "@/components/ui/card";
+import { Heading } from "@/components/ui/heading";
+import { Text } from "@/components/ui/text";
+// import { Image } from "@/components/ui/image";
+
+import { VStack } from "@/components/ui/vstack";
+import { useMediaQuery } from "@gluestack-ui/utils/hooks";
+import { Image } from "expo-image";
+
+function CardView({ uri, title, description }) {
+  const { width } = useWindowDimensions();
+  const [isMobile, isTablet, isSmallScreen, isLargeScreen] = useMediaQuery([
+    {
+      maxWidth: 480,
+    },
+    // {
+    //   minWidth: 481,
+    //   maxWidth: 768,
+    // },
+    // {
+    //   minWidth: 769,
+    //   maxWidth: 1440,
+    // },
+    // {
+    //   minWidth: 1441,
+    // },
+  ]);
+  return (
+    <Card
+      className={`lg:w-1/4 md:w-1/3 sm:w-1/2 rounded-lg gap-1 mt-1`}
+      style={{ width: isMobile ? width : undefined }}
+    >
+      <Image
+        source={{
+          uri: uri, //|| require("../assets/images/icon_grey.png"),
+        }}
+        className={`h-[300px]    rounded-md`}
+        alt="image"
+        contentFit="cover"
+        style={{
+          width: isMobile ? "100%" : undefined,
+          height: isMobile ? width / 2 : undefined,
+          borderRadius: 10,
+        }}
+      />
+      <Text size="xl" className="font-normal mb-2 text-typography-700">
+        {title}
+      </Text>
+      <Heading size="sm" className="">
+        MRP - {description}
+      </Heading>
+    </Card>
+  );
+}

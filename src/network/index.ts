@@ -5,6 +5,8 @@ import {
   doc,
   getDocs,
   onSnapshot,
+  orderBy,
+  query,
   updateDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -58,7 +60,11 @@ const deleteProducts = async (products: Set<string>) => {
 
 const getProductsRealTime = (cb: (products: ProductTypes[]) => void) => {
   try {
-    const sub = onSnapshot(collection(db, COLLECTIONS.products), (snapshot) => {
+    const q = query(
+      collection(db, COLLECTIONS.products),
+      orderBy("last_updated_at", "desc")
+    );
+    const sub = onSnapshot(q, (snapshot) => {
       const products =
         snapshot?.docs?.map((doc) => ({
           id: doc.id,

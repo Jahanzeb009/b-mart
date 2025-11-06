@@ -5,12 +5,12 @@ import React, {
   useState,
 } from "react";
 import { useTheme } from "@react-navigation/native";
-import { Text } from "react-native-paper";
 import { Pressable, TextInput, View, ViewStyle } from "react-native";
 import Animated, {
   useAnimatedStyle,
   withTiming,
 } from "react-native-reanimated";
+import { Text } from "./ui/text";
 
 type CustomTextInputProps = {
   label: string;
@@ -50,7 +50,7 @@ const CustomInput = forwardRef<TextInput, CustomTextInputProps>(
           {label && (
             <Text
               style={{ color: isFocused ? colors.primary : colors.text + "90" }}
-              variant="labelSmall"
+              size="sm"
             >
               {label}
             </Text>

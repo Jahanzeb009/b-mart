@@ -13,6 +13,9 @@ import { useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
+import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
+import "@/global.css";
+
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
@@ -38,26 +41,28 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <KeyboardProvider>
-      <GestureHandlerRootView style={{ flex: 1, backgroundColor: "black" }}>
-        <ThemeProvider value={colorScheme === "dark" ? Dark : Light}>
-          <SheetProvider>
-            <Stack>
-              <Stack.Screen
-                name="index"
-                options={{
-                  title: "B Mart",
-                  headerShadowVisible: false,
-                  headerTitleAlign: "center",
-                }}
-              />
-              <Stack.Screen name="addProduct" />
-              <Stack.Screen name="productDetails" />
-            </Stack>
-          </SheetProvider>
-        </ThemeProvider>
-      </GestureHandlerRootView>
-    </KeyboardProvider>
+    <GluestackUIProvider mode={'system'}>
+      <KeyboardProvider>
+        <GestureHandlerRootView style={{ flex: 1, backgroundColor: "black" }}>
+          <ThemeProvider value={colorScheme === "dark" ? Dark : Light}>
+            <SheetProvider>
+              <Stack>
+                <Stack.Screen
+                  name="index"
+                  options={{
+                    title: "B Mart",
+                    headerShadowVisible: false,
+                    headerTitleAlign: "center",
+                  }}
+                />
+                <Stack.Screen name="addProduct" />
+                <Stack.Screen name="productDetails" />
+              </Stack>
+            </SheetProvider>
+          </ThemeProvider>
+        </GestureHandlerRootView>
+      </KeyboardProvider>
+    </GluestackUIProvider>
   );
 }
 
@@ -70,7 +75,7 @@ const Dark: typeof DarkTheme = {
     card: "#1c1c1e",
     notification: "#ff453a",
     primary: "#409cff",
-    text: "#e5e5e7",
+    text: "#d1d1d6",
   },
 };
 
@@ -83,6 +88,6 @@ const Light: typeof DefaultTheme = {
     card: "#ffffff",
     notification: "#ff3b30",
     primary: "#007aff",
-    text: "#1c1c1e",
+    text: "#2c2c2e",
   },
 };

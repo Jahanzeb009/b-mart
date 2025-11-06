@@ -1,18 +1,19 @@
+import { Box } from "@/components/ui/box";
+import { Text } from "@/components/ui/text";
 import { Link, Stack } from "expo-router";
 import { StyleSheet, View } from "react-native";
-import { Text } from "react-native-paper";
 
 export default function NotFoundScreen() {
   return (
     <>
       <Stack.Screen options={{ title: "Oops!" }} />
-      <View style={styles.container}>
+      <Box className="flex justify-center items-center p-5">
         <Text style={styles.title}>This screen doesn't exist.</Text>
 
         <Link href="/" style={styles.link}>
           <Text style={styles.linkText}>Go to home screen!</Text>
         </Link>
-      </View>
+      </Box>
     </>
   );
 }

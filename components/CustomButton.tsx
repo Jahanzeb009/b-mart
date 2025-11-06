@@ -1,19 +1,22 @@
 import React, { useState } from "react";
 import { useTheme } from "@react-navigation/native";
-import { Button, ButtonProps } from "react-native-paper";
 import { selectionAsync } from "expo-haptics";
 import Animated, {
   LinearTransition,
   useAnimatedStyle,
   withTiming,
 } from "react-native-reanimated";
+import { Button } from "./ui/button";
+import { IButtonProps } from "@gluestack-ui/core/lib/esm/button/creator/types";
+import { Spinner } from "./ui/spinner";
 
 const CustomButton = ({
-  style,
-  labelStyle,
   onPress,
+  style,
+  children,
+  loading,
   ...props
-}: ButtonProps) => {
+}: IButtonProps & { loading?: boolean }) => {
   const { colors } = useTheme();
   const [isPressed, setIsPressed] = useState(false);
 
@@ -32,25 +35,14 @@ const CustomButton = ({
       <Button
         onPressIn={() => setIsPressed(true)}
         onPressOut={() => setIsPressed(false)}
-        mode="contained"
-        theme={{ colors: { primary: colors.primary } }}
-        style={[{ borderRadius: 5, padding: 5 }, style]}
-        labelStyle={[
-          {
-            flex: 1,
-            fontWeight: "bold",
-            textTransform: "uppercase",
-          },
-          labelStyle,
-        ]}
+        style={[{ borderRadius: 5, backgroundColor: colors.primary }, style]}
         onPress={(e) => {
           selectionAsync();
           onPress?.(e);
         }}
+        children={<>{loading ? <Spinner color={"white"} /> : children}</>}
         {...props}
-      >
-        {props.children}
-      </Button>
+      />
     </Animated.View>
   );
 };

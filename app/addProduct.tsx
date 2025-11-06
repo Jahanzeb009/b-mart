@@ -23,6 +23,13 @@ import CustomButton from "@/components/CustomButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import MenuItem from "@/components/CustomMenu";
+import CustomAlert from "@/components/CustomAlert";
+import { ButtonText } from "@/components/ui/button";
+import { VStack } from "@/components/ui/vstack";
+import { Image } from "@/components/ui/image";
+import { Box } from "@/components/ui/box";
+import { Icon } from "@/components/ui/icon";
+import { Camera } from "lucide-react-native";
 
 const AddProductScreen = () => {
   const { colors } = useTheme();
@@ -41,6 +48,8 @@ const AddProductScreen = () => {
     isEditing: boolean;
     selectedCategory?: { key: string; id: string };
   };
+
+  const [showAlertDialog, setShowAlertDialog] = useState(false);
 
   const selectImageMenuData = [
     // {
@@ -134,11 +143,7 @@ const AddProductScreen = () => {
         !product_invoice.length ||
         !product_mrp.length
       ) {
-        if (Platform.OS === "web") {
-          alert(`Missing\nFill all the details`);
-        } else {
-          Alert.alert("Missing", "Fill all the details");
-        }
+        setShowAlertDialog(true);
         return;
       }
 
@@ -165,7 +170,7 @@ const AddProductScreen = () => {
         await uploadBytesResumable(storageRef, blob);
         product_image_url = await getDownloadURL(storageRef);
       }
-      console.log({ product_image_url });
+      // console.log({ product_image_url });
       if (params?.isEditing) {
         await updateProduct(params.id, {
           ...productInfo,
@@ -187,6 +192,11 @@ const AddProductScreen = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleCloseAlert = () => {
+    setShowAlertDialog(false);
+    inputRefs.current?.product_name?.focus();
   };
 
   const onImageSelect = async (val: string) => {
@@ -261,151 +271,194 @@ const AddProductScreen = () => {
           { backgroundColor: colors.background, gap: 15, marginTop: 30 },
         ]}
       >
-        <View style={{ alignSelf: "center" }}>
-          <MenuItem
-            title="Select Image Source"
-            data={selectImageMenuData}
-            onValueSelect={onImageSelect}
-          >
-            {productInfo.product_image ? (
-              <CustomImage
-                source={{ uri: productInfo.product_image }}
-                width={150}
-                height={150}
-                style={{ alignSelf: "center" }}
-                resizeMode={"contain"}
-              />
-            ) : (
-              <View
-                style={{
-                  width: 150,
-                  height: 150,
-                  backgroundColor: colors.card,
-                  borderRadius: 10,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  alignSelf: "center",
-                }}
-              >
-                <MaterialCommunityIcons
-                  name="camera"
-                  size={40}
-                  color={colors.text}
+        <VStack className="gap-[15px]  sm:w-[500px] sm:self-center">
+          <Box className="self-center">
+            <MenuItem
+              title="Select Image Source"
+              data={selectImageMenuData}
+              onValueSelect={onImageSelect}
+            >
+              {productInfo?.product_image ? (
+                <Image
+                  source={{
+                    uri: params?.isEditing
+                      ? productInfo.product_image
+                      : generateImageUrl(productInfo.product_image),
+                  }}
+                  className={`mb-6 h-[300px] w-[300px] rounded-md`}
+                  alt="image"
+                  resizeMode="cover"
+                  onError={(e) => console.log(e)}
+                  style={{ width: 300, aspectRatio: 1, marginBottom: 15 }}
                 />
-              </View>
-            )}
-          </MenuItem>
-        </View>
+              ) : (
+                <Box
+                  className={`mb-6 h-[300px] w-[300px] items-center justify-center rounded-lg`}
+                  style={{
+                    // width: 150,
+                    // height: 150,
+                    backgroundColor: colors.card,
+                    // borderRadius: 10,
+                    // justifyContent: "center",
+                    // alignItems: "center",
+                    // alignSelf: "center",
+                  }}
+                >
+                  <Icon as={Camera} size={40} color={colors.text} />
+                </Box>
+              )}
 
-        <View style={{ gap: 15, paddingHorizontal: 15 }}>
-          <CustomInput
-            ref={getRef("product_name")}
-            label={"Product Name"}
-            placeholder="Product Name"
-            value={productInfo.product_name}
-            returnKeyType="next"
-            onSubmitEditing={() => inputRefs.current?.invoice?.focus()}
-            onChangeText={(name) =>
-              setProductInfo((pre) => ({ ...pre, product_name: name }))
-            }
-          />
+              {/* {productInfo.product_image ? (
+                <CustomImage
+                  source={{ uri: productInfo.product_image }}
+                  width={150}
+                  height={150}
+                  style={{ alignSelf: "center" }}
+                  resizeMode={"contain"}
+                />
+              ) : (
+              )} */}
+            </MenuItem>
+          </Box>
 
-          <View style={{ flexDirection: "row", gap: 15 }}>
-            <CustomInput
-              ref={getRef("invoice")}
-              label={"Invoice"}
-              placeholder="Invoice"
-              keyboardType="numeric"
-              value={productInfo.product_invoice}
-              returnKeyType="next"
-              onSubmitEditing={() => {
-                inputRefs.current?.mrp?.focus();
-              }}
-              onChangeText={(price) =>
-                setProductInfo((pre) => ({
-                  ...pre,
-                  product_invoice: price.replace(/[^\d.]/g, ""),
-                }))
-              }
-              containerStyle={{ flex: 1 }}
-            />
-            <CustomInput
-              ref={getRef("mrp")}
-              label={"MRP"}
-              placeholder="MRP"
-              keyboardType="numeric"
-              value={productInfo.product_mrp}
-              returnKeyType="next"
-              onSubmitEditing={() => {
-                inputRefs.current?.extra_info?.focus();
-              }}
-              onChangeText={(price) => {
-                setProductInfo((pre) => ({
-                  ...pre,
-                  product_mrp: price.replace(/[^\d.]/g, ""),
-                }));
-              }}
-              containerStyle={{ flex: 1 }}
-            />
-          </View>
-
-          <MenuItem
-            ref={menuRef}
-            title="Select Category"
-            data={[
-              {
-                title: "add new",
-                id: "add",
-                imageColor: colors.primary,
-
-                image: Platform.select({ android: "ic_menu_add", ios: "plus" }),
-              },
-              ...categories.map((cat) => ({ title: cat.key, id: cat.key })),
-            ]}
-            onValueSelect={async (value) => {
-              if (value === "add") {
-                const val = await SheetManager.show("add-category-sheet");
-
-                if (val) {
-                  setProductInfo((pre) => ({ ...pre, product_category: val }));
-                  await addCategory(val);
-                }
-                return;
-              }
-              setProductInfo((pre) => ({ ...pre, product_category: value }));
-            }}
+          <Box
+            className="gap-2.5 px-5" /* style={{ gap: 15, paddingHorizontal: 15 }} */
           >
             <CustomInput
-              editable={false}
-              label={"Category"}
-              pointerEvents="none"
-              placeholder="Category"
-              value={productInfo.product_category}
+              ref={getRef("product_name")}
+              label={"Product Name"}
+              placeholder="Product Name"
+              value={productInfo.product_name}
+              returnKeyType="next"
+              onSubmitEditing={() => inputRefs.current?.invoice?.focus()}
               onChangeText={(name) =>
                 setProductInfo((pre) => ({ ...pre, product_name: name }))
               }
             />
-          </MenuItem>
 
-          <CustomInput
-            ref={getRef("extra_info")}
-            label={"Extra Info"}
-            placeholder="Extra Info"
-            value={productInfo.product_extra_info}
-            returnKeyType="done"
-            onSubmitEditing={() => handleSaveProduct()}
-            onChangeText={(value) => {
-              setProductInfo((pre) => ({
-                ...pre,
-                product_extra_info: value,
-              }));
-            }}
-          />
+            <Box className="flex-row gap-2.5">
+              <CustomInput
+                ref={getRef("invoice")}
+                label={"Invoice"}
+                placeholder="Invoice"
+                keyboardType="numeric"
+                value={productInfo.product_invoice}
+                returnKeyType="next"
+                onSubmitEditing={() => {
+                  inputRefs.current?.mrp?.focus();
+                }}
+                onChangeText={(price) =>
+                  setProductInfo((pre) => ({
+                    ...pre,
+                    product_invoice: price.replace(/[^\d.]/g, ""),
+                  }))
+                }
+                containerStyle={{ flex: 1 }}
+              />
+              <CustomInput
+                ref={getRef("mrp")}
+                label={"MRP"}
+                placeholder="MRP"
+                keyboardType="numeric"
+                value={productInfo.product_mrp}
+                returnKeyType="next"
+                onSubmitEditing={() => {
+                  inputRefs.current?.extra_info?.focus();
+                }}
+                onChangeText={(price) => {
+                  setProductInfo((pre) => ({
+                    ...pre,
+                    product_mrp: price.replace(/[^\d.]/g, ""),
+                  }));
+                }}
+                containerStyle={{ flex: 1 }}
+              />
+            </Box>
 
-          <CustomButton loading={isLoading} onPress={handleSaveProduct}>
-            {params?.isEditing ? "update" : "save"}
-          </CustomButton>
-        </View>
+            <MenuItem
+              ref={menuRef}
+              title="Select Category"
+              data={[
+                {
+                  title: "add new",
+                  id: "add",
+                  imageColor: colors.primary,
+
+                  image: Platform.select({
+                    android: "ic_menu_add",
+                    ios: "plus",
+                  }),
+                },
+                ...categories.map((cat) => ({ title: cat.key, id: cat.key })),
+              ]}
+              onValueSelect={async (value) => {
+                if (value === "add") {
+                  const val = await SheetManager.show("add-category-sheet");
+
+                  if (val) {
+                    setProductInfo((pre) => ({
+                      ...pre,
+                      product_category: val,
+                    }));
+                    await addCategory(val);
+                  }
+                  return;
+                }
+                setProductInfo((pre) => ({ ...pre, product_category: value }));
+              }}
+            >
+              <CustomInput
+                editable={false}
+                label={"Category"}
+                pointerEvents="none"
+                placeholder="Category"
+                value={productInfo.product_category}
+                onChangeText={(name) =>
+                  setProductInfo((pre) => ({ ...pre, product_name: name }))
+                }
+              />
+            </MenuItem>
+
+            <CustomInput
+              ref={getRef("extra_info")}
+              label={"Extra Info"}
+              placeholder="Extra Info"
+              value={productInfo.product_extra_info}
+              returnKeyType="done"
+              onSubmitEditing={() => handleSaveProduct()}
+              onChangeText={(value) => {
+                setProductInfo((pre) => ({
+                  ...pre,
+                  product_extra_info: value,
+                }));
+              }}
+            />
+
+            <CustomButton
+              style={{ padding: 10, height: "auto" }}
+              className="p-[10px]"
+              loading={isLoading}
+              onPress={handleSaveProduct}
+            >
+              <ButtonText className="color-white capitalize">
+                {params?.isEditing ? "update" : "save"}
+              </ButtonText>
+            </CustomButton>
+          </Box>
+        </VStack>
+
+        <CustomAlert
+          showAlertDialog={showAlertDialog}
+          title="Missing"
+          description="Fill all the details"
+          onClose={handleCloseAlert}
+          footer={[
+            {
+              children: <ButtonText>Okay</ButtonText>,
+              onPress: handleCloseAlert,
+            },
+          ]}
+        />
       </KeyboardAwareScrollView>
     </>
   );

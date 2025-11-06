@@ -8,15 +8,11 @@ import {
 import React, { useEffect, useState } from "react";
 import ActionSheet, {
   FlatList,
-  ScrollView,
   SheetManager,
   SheetProps,
 } from "react-native-actions-sheet";
 import { useTheme } from "@react-navigation/native";
-// import { listAll, ref } from "@react-native-firebase/storage";
-// import { storage } from "../network/firebase";
 import CustomImage from "@/components/CustomImage";
-import { FlashList } from "@shopify/flash-list";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { HelperText, IconButton } from "react-native-paper";
 
@@ -24,12 +20,10 @@ const getAllImageUrls = async (path = "images/products") => {
   try {
     // const reference = ref(storage, path);
     // const result = await listAll(reference);
-
     // // Get download URLs for each item
     // const urls = await Promise.all(
     //   result.items.map((itemRef) => itemRef.getDownloadURL())
     // );
-
     // return urls; // Array of URLs
   } catch (error) {
     console.error("Error fetching images:", error);
@@ -94,7 +88,7 @@ const UploadedImagesSheet = (props: SheetProps<"uploaded-images-sheet">) => {
   const last_updated_at = new Date(
     images.last_updated_at ?? Date.now()
   ).toLocaleString();
-  console.log({ images });
+
   return (
     <ActionSheet
       gestureEnabled
@@ -156,11 +150,8 @@ const UploadedImagesSheet = (props: SheetProps<"uploaded-images-sheet">) => {
           }}
           contentContainerStyle={{
             paddingTop: 15,
-            // gap: 15,
             paddingHorizontal: 15,
           }}
-          estimatedItemSize={200}
-          //   columnWrapperStyle={{ gap: 15 }}
           renderItem={({ item, index }) => {
             return (
               <Pressable
