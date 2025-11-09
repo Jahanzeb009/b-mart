@@ -2,7 +2,7 @@
   "expo": {
     "name": "B Mart",
     "slug": "b-mart",
-    "version": "1.0.0",
+    "version": "2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "owner": "b-mart",
@@ -16,7 +16,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bmart.product.list",
+      "bundleIdentifier": "com.scorecard.jumpon",
       "appleTeamId": "4774WZNLU4"
     },
     "android": {
@@ -65,6 +65,12 @@
       "eas": {
         "projectId": "3a956cf9-418d-4009-8083-20beafe9a204"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3a956cf9-418d-4009-8083-20beafe9a204",
     }
   }
 }
