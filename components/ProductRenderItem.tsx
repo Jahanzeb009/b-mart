@@ -93,12 +93,15 @@ export const ProductRenderItem = memo(
     return (
       <VStack
         className={
-          Platform.OS === "web"
-            ? "lg:w-1/5 md:w-1/4 sm:w-1/3 w-1/2 rounded-lg gap-1"
-            : "w-full rounded-lg gap-1"
+          "android:w-full ios:w-full overflow-hidden lg:w-1/5 md:w-1/4 sm:w-1/3 w-1/2 rounded-none gap-1"
         }
       >
-        <Card variant="filled" key={index} className={`p-0 m-2`} style={{borderWidth:2,borderColor:'#fff2'}}>
+        <Card
+          variant="filled"
+          key={index}
+          className={`p-0 m-2`}
+          style={{ borderWidth: 2, borderColor: "#fff2" }}
+        >
           <Pressable
             onLongPress={onLongPress}
             onPress={() => {
@@ -126,16 +129,14 @@ export const ProductRenderItem = memo(
                     ? { uri: item.product_image }
                     : require("../assets/images/icon_grey.png")
                 }
-                className={`mb-[10px] h-[150px] sm:h-[300px] w-full rounded-md`}
+                className={`mb-[10px] h-[150px] sm:h-[250px] overflow-hidden w-full rounded-none`}
                 alt="image"
                 resizeMode="cover"
                 onError={(e) => console.log(e?.nativeEvent?.error)}
                 style={{
                   width: "100%",
-                  // height: 150,
+                  overflow: "hidden",
                   height: displayHeight,
-                  // marginBottom: 10,
-                  borderRadius: 10,
                 }}
               />
             )}
@@ -144,8 +145,8 @@ export const ProductRenderItem = memo(
                 {item.product_name}
               </Heading>
 
-              <HStack className="justify-between">
-                <VStack className="justify-between align-middle gap-1">
+              <HStack className="justify-evenly">
+                <VStack className="justify-between flex items-center w-1/2 align-middle gap-1">
                   <Text className="text-sm font-normal mb-2 text-typography-700">
                     Invoice
                   </Text>
@@ -153,7 +154,7 @@ export const ProductRenderItem = memo(
                     {formatCurrency(+item.product_invoice)}
                   </Text>
                 </VStack>
-                <VStack className="justify-between gap-1">
+                <VStack className="justify-between gap-1 items-center w-1/2">
                   <Text className="text-sm font-normal mb-2 text-typography-700">
                     MRP
                   </Text>

@@ -6,21 +6,14 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-import React, {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "@react-navigation/native";
-import { router, Stack, useFocusEffect } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Chip, FAB, IconButton, Searchbar } from "react-native-paper";
+import { IconButton, Searchbar } from "react-native-paper";
 import {
   deleteProducts,
   ErrorLog,
-  getCategories,
   getCategoriesRealTime,
   getProductsRealTime,
 } from "@/src/network";
@@ -33,10 +26,12 @@ import { RectButton } from "react-native-gesture-handler";
 import { FlashList, FlashListRef } from "@shopify/flash-list";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useDeviceType } from "@/src/utils";
-import { Box } from "@/components/ui/box";
-import { Fab, FabIcon, FabLabel } from "@/components/ui/fab";
 import { Trash2, Plus } from "lucide-react-native";
 import { debounce } from "lodash";
+import { ChipsContainer } from "@/components/ChipsContainer";
+import { VStack } from "@/components/ui/vstack";
+import { SkeletonView } from "@/components/SkeletonView";
+import { FabButton } from "@/components/FabButton";
 
 // const List = Platform.select({
 //   android: FlashList,
@@ -92,6 +87,7 @@ const Home = () => {
   const [isEditingMode, setIsEditingMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [categories, setCategories] = useState<ProductCategoryTypes[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(false);
   const [selectedCategory, setSelectedCategory] =
     useState<ProductCategoryTypes>({
       id: "all",
@@ -131,7 +127,7 @@ const Home = () => {
         setIsLoading(false);
       }
     });
-    const productSub = getProductsRealTime((products) => {
+    const productSub = getProductsRealTime(setIsLoadingData, (products) => {
       try {
         setProductList(products);
         setFilterData(products);
@@ -140,6 +136,7 @@ const Home = () => {
         ErrorLog("productSub = getProductsRealTime", e);
       } finally {
         setIsLoading(false);
+        // setIsLoading(false);
       }
     });
 
@@ -186,7 +183,8 @@ const Home = () => {
     }
 
     setFilterData(filtered);
-  }, [queryText, selectedCategory, productList]);
+    ListRef?.current?.scrollToTop({ animated: true });
+  }, [queryText, selectedCategory, productList, ListRef.current]);
 
   // const debounceSearch = useCallback(
   //   debounce((queryText: string) => {
@@ -392,23 +390,13 @@ const Home = () => {
               } else {
                 ListRef.current?.scrollToTop();
               }
-              // setFilterData(
-              //   productList.filter((product) => {
-              //     if (selectedCategory.key === "all") return true;
-              //     return product.product_category === selectedCategory?.key;
-              //   })
-              // );
             }}
           />
           {/* <Animated.View entering={FadeInUp} exiting={FadeOutUp}> */}
           {showSearch && (
             <Searchbar
               placeholder="Search Product"
-              onChangeText={
-                handleSearchChange
-                // setQueryText(text);
-                // debounceSearch(text);
-              }
+              onChangeText={handleSearchChange}
               // value={queryText}
               placeholderTextColor={"grey"}
               autoFocus
@@ -428,10 +416,19 @@ const Home = () => {
               }}
             />
           )}
-          {/* </Animated.View> */}
         </View>
 
         <View style={{ flex: 1 }}>
+          {isLoadingData && (
+            <ScrollView scrollEventThrottle={16} decelerationRate={"fast"}>
+              <VStack className="flex-wrap flex-row">
+                {Array.from({ length: 15 }).map((_, i) => {
+                  return <SkeletonView key={i} />;
+                })}
+              </VStack>
+            </ScrollView>
+          )}
+
           {Platform.OS !== "web" ? (
             <FlashList
               ref={ListRef}
@@ -442,6 +439,8 @@ const Home = () => {
               keyExtractor={(item) => item.id.toString()}
               scrollEventThrottle={16}
               decelerationRate={"fast"}
+              keyboardShouldPersistTaps="handled"
+              automaticallyAdjustKeyboardInsets
               optimizeItemArrangement
               contentContainerStyle={{ paddingBottom: inset.bottom * 3 }}
             />
@@ -456,106 +455,7 @@ const Home = () => {
               </VStack>
             </ScrollView>
           )}
-
-          {/* <List
-            data={filterData()}
-            key={currentDevice !== "mobile" ? "web_list" : "mobile_list"}
-            numColumns={currentDevice !== "mobile" ? 2 : 1}
-            keyExtractor={(item): string => item.id}
-            ListEmptyComponent={
-              <View
-                style={{
-                  minHeight: width,
-
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Text variant="bodyLarge" style={{ color: colors.text }}>
-                  No Products Found
-                </Text>
-              </View>
-            }
-            showsVerticalScrollIndicator={false}
-            // renderItem={renderProduct}
-            renderItem={({ item }) => {
-              return (
-                <CardView
-                  description={item.product_mrp}
-                  uri={item.product_image}
-                  title={item.product_name}
-                />
-              );
-            }}
-            extraData={{ isEditingMode }}
-            // columnWrapperStyle={{gap: }}
-            contentContainerStyle={{
-              // gap: 10,
-              // paddingHorizontal: 10,
-              padding: 10,
-              paddingBottom: inset.bottom + 100,
-            }}
-          /> */}
-          {/* <LegendList
-            data={filterData()}
-            keyExtractor={(item): string => item.id}
-            // numColumns={2}
-            ListEmptyComponent={
-              <View
-                style={{
-                  minHeight: width,
-
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Text variant="bodyLarge" style={{ color: colors.text }}>
-                  No Products Found
-                </Text>
-              </View>
-            }
-            showsVerticalScrollIndicator={false}
-            renderItem={({ item, index }) => renderProduct({ index, item })}
-            recycleItems
-            extraData={{ isEditingMode }}
-            // columnWrapperStyle={{gap: }}
-            contentContainerStyle={{
-              gap: 10,
-              // paddingHorizontal: 10,
-              padding: 10,
-              paddingBottom: inset.bottom + 15,
-            }}
-          /> */}
-          {/* <MasonryList
-            data={filterData()}
-            keyExtractor={(item): string => item.id}
-            numColumns={2}
-            ListEmptyComponent={
-              <View
-                style={{
-                  minHeight: width,
-
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Text variant="bodyLarge" style={{ color: colors.text }}>
-                  No Products Found
-                </Text>
-              </View>
-            }
-            showsVerticalScrollIndicator={false}
-            renderItem={({ item, i }) => renderProduct({ index: i, item })}
-            contentContainerStyle={{
-              paddingHorizontal: 10,
-              paddingBottom: inset.bottom + 15,
-            }}
-          /> */}
         </View>
-
-        {/* <SkeletonView/>
-
-        <GridView/> */}
 
         <FabButton icon={isEditingMode ? Trash2 : Plus} onPress={onPressFab} />
       </View>
@@ -564,162 +464,3 @@ const Home = () => {
 };
 
 export default Home;
-
-const ChipsContainer = forwardRef<
-  FlatList,
-  {
-    categories: ProductCategoryTypes[];
-    onPress: (item: ProductCategoryTypes) => void;
-    selectedCategory: ProductCategoryTypes;
-  }
->(({ categories, onPress, selectedCategory }, ref) => {
-  const { colors } = useTheme();
-
-  return (
-    <FlatList
-      horizontal
-      ref={ref}
-      data={[{ key: "all", id: "all" }, ...categories]}
-      showsHorizontalScrollIndicator={false}
-      keyExtractor={(item) => item.id}
-      contentContainerStyle={{
-        gap: 10,
-        paddingHorizontal: 15,
-        // paddingTop: headerHeight + 15,
-      }}
-      renderItem={({ item, index }) => {
-        return (
-          <RectButton
-            style={{
-              borderRadius: 100,
-            }}
-            onPress={() => onPress(item)}
-          >
-            <Chip
-              textStyle={{ textTransform: "capitalize" }}
-              style={{
-                borderWidth: 1,
-                borderColor:
-                  selectedCategory?.id === item.id
-                    ? colors.primary
-                    : colors.border,
-              }}
-              // theme={{ colors: { primary: colors.primary } }}
-              // selectedColor=""
-              theme={{
-                roundness: 5,
-                colors: {
-                  secondaryContainer:
-                    selectedCategory?.id === item.id
-                      ? colors.primary
-                      : colors.card,
-                  onSecondaryContainer:
-                    selectedCategory?.id === item.id ? "white" : colors.text,
-                },
-              }}
-            >
-              {item.key}
-            </Chip>
-          </RectButton>
-        );
-      }}
-    />
-  );
-});
-
-const FabButton = ({
-  onPress,
-  icon,
-}: {
-  onPress: () => void;
-  icon: React.ElementType;
-}) => {
-  const inset = useSafeAreaInsets();
-  const { colors } = useTheme();
-
-  return (
-    <Fab
-      size="lg"
-      placement="bottom right"
-      isHovered={false}
-      isDisabled={false}
-      isPressed={false}
-      onPress={onPress}
-      style={{ marginBottom: inset.bottom, backgroundColor: colors.primary }}
-    >
-      <FabIcon as={icon} color="white" />
-      {/* <FabLabel>Quick start</FabLabel> */}
-    </Fab>
-  );
-};
-
-import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
-import { HStack } from "@/components/ui/hstack";
-
-function SkeletonView() {
-  return (
-    <Box className="w-[300px] gap-4 p-3 rounded-md bg-background-100">
-      <Skeleton variant="sharp" className="h-[100px]" />
-      <SkeletonText _lines={3} className="h-2" />
-      <HStack className="gap-1 align-middle">
-        <Skeleton variant="circular" className="h-[24px] w-[28px] mr-2" />
-        <SkeletonText _lines={2} gap={1} className="h-2 w-2/5" />
-      </HStack>
-    </Box>
-  );
-}
-
-import { Card } from "@/components/ui/card";
-import { Heading } from "@/components/ui/heading";
-import { Text } from "@/components/ui/text";
-// import { Image } from "@/components/ui/image";
-
-import { VStack } from "@/components/ui/vstack";
-import { useMediaQuery } from "@gluestack-ui/utils/hooks";
-import { Image } from "expo-image";
-
-function CardView({ uri, title, description }) {
-  const { width } = useWindowDimensions();
-  const [isMobile, isTablet, isSmallScreen, isLargeScreen] = useMediaQuery([
-    {
-      maxWidth: 480,
-    },
-    // {
-    //   minWidth: 481,
-    //   maxWidth: 768,
-    // },
-    // {
-    //   minWidth: 769,
-    //   maxWidth: 1440,
-    // },
-    // {
-    //   minWidth: 1441,
-    // },
-  ]);
-  return (
-    <Card
-      className={`lg:w-1/4 md:w-1/3 sm:w-1/2 rounded-lg gap-1 mt-1`}
-      style={{ width: isMobile ? width : undefined }}
-    >
-      <Image
-        source={{
-          uri: uri, //|| require("../assets/images/icon_grey.png"),
-        }}
-        className={`h-[300px]    rounded-md`}
-        alt="image"
-        contentFit="cover"
-        style={{
-          width: isMobile ? "100%" : undefined,
-          height: isMobile ? width / 2 : undefined,
-          borderRadius: 10,
-        }}
-      />
-      <Text size="xl" className="font-normal mb-2 text-typography-700">
-        {title}
-      </Text>
-      <Heading size="sm" className="">
-        MRP - {description}
-      </Heading>
-    </Card>
-  );
-}

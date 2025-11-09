@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { ProductCategoryTypes, ProductTypes } from "../types";
+import { Dispatch, SetStateAction } from "react";
 
 export const ErrorLog = (name: string, error: unknown) =>
   console.log(`${name} -> `, error);
@@ -58,8 +59,12 @@ const deleteProducts = async (products: Set<string>) => {
   }
 };
 
-const getProductsRealTime = (cb: (products: ProductTypes[]) => void) => {
+const getProductsRealTime = (
+  setState: Dispatch<SetStateAction<boolean>>,
+  cb: (products: ProductTypes[]) => void
+) => {
   try {
+    setState?.(true);
     const q = query(
       collection(db, COLLECTIONS.products),
       orderBy("last_updated_at", "desc")
@@ -70,12 +75,14 @@ const getProductsRealTime = (cb: (products: ProductTypes[]) => void) => {
           id: doc.id,
           ...doc.data(),
         })) ?? [];
+      setState?.(false);
       cb?.(products as ProductTypes[]);
     });
 
     return sub;
   } catch (e) {
     ErrorLog("getProductsRealTime", e);
+    setState?.(false);
     return null;
   }
 };
