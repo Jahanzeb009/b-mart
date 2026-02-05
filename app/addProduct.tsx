@@ -144,7 +144,7 @@ const AddProductScreen = () => {
         extra_attachments:
           typeof params.extra_attachments === "string"
             ? JSON.parse(JSON.parse(params.extra_attachments))
-            : params.extra_attachments,
+            : (params?.extra_attachments ?? []),
         image: params.image,
       });
 
