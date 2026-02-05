@@ -2,6 +2,7 @@ import { registerSheet, SheetDefinition } from "react-native-actions-sheet";
 import AddCategorySheet from "./addCategorySheet";
 import UploadedImagesSheet from "./uploadedImagesSheet";
 import ShowAllCategoriesSheet from "./showAllCategoriesSheet";
+import { ProductCategoryTypes } from "../types";
 
 registerSheet("add-category-sheet", AddCategorySheet);
 registerSheet("uploaded-images-sheet", UploadedImagesSheet);
@@ -16,10 +17,10 @@ declare module "react-native-actions-sheet" {
       returnValue: string | null;
     }>;
     "show-all-categories-sheet": SheetDefinition<{
-      returnValue: { key: string; id: string } | null;
+      returnValue: ProductCategoryTypes | null;
       payload: {
-        categories: { key: string; id: string }[];
-        selectedCategory: { key: string; id: string };
+        categories: ProductCategoryTypes[];
+        selectedCategory: ProductCategoryTypes;
         onPress: (index: number) => void;
       };
     }>;

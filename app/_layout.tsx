@@ -5,7 +5,7 @@ import {
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import "react-native-reanimated";
 import "@/src/sheets";
 import { SheetProvider } from "react-native-actions-sheet";
@@ -15,6 +15,8 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import "@/global.css";
+import { Session } from "@supabase/supabase-js";
+import { supabase } from "@/src/network/supabase";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -40,8 +42,24 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
+  useEffect(() => {
+    let mounted = true;
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!mounted) return;
+        console.log("session", !!session);
+      }
+    );
+
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
   return (
-    <GluestackUIProvider mode={'system'}>
+    <GluestackUIProvider mode={"system"}>
       <KeyboardProvider>
         <GestureHandlerRootView style={{ flex: 1, backgroundColor: "black" }}>
           <ThemeProvider value={colorScheme === "dark" ? Dark : Light}>

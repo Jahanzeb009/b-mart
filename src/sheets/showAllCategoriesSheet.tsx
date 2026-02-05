@@ -14,6 +14,7 @@ const ShowAllCategoriesSheet = (
 ) => {
   const { colors } = useTheme();
   const { payload } = props;
+
   return (
     <ActionSheet
       gestureEnabled
@@ -34,39 +35,37 @@ const ShowAllCategoriesSheet = (
 
         <Box className="flex-row gap-4 flex-wrap">
           {payload?.categories.map((item, i) => {
+            const isSelectedChip = payload.selectedCategory?.id === item.id;
             return (
               <Box key={i}>
                 <Chip
                   textStyle={{ textTransform: "capitalize" }}
                   onPress={() => {
-                    selectionAsync();
                     payload.onPress(i);
+                    selectionAsync();
                     SheetManager.hide("show-all-categories-sheet", {
                       payload: item,
                     });
                   }}
                   style={{
                     borderWidth: 1,
-                    borderColor:
-                      payload.selectedCategory?.id === item.id
-                        ? colors.primary
-                        : colors.background,
+                    borderColor: isSelectedChip
+                      ? colors.primary
+                      : colors.background,
                   }}
                   theme={{
                     roundness: 5,
                     colors: {
-                      secondaryContainer:
-                        payload.selectedCategory?.id === item.id
-                          ? colors.primary
-                          : colors.card,
-                      onSecondaryContainer:
-                        payload.selectedCategory?.id === item.id
-                          ? "white"
-                          : colors.text,
+                      secondaryContainer: isSelectedChip
+                        ? colors.primary
+                        : colors.card,
+                      onSecondaryContainer: isSelectedChip
+                        ? "white"
+                        : colors.text,
                     },
                   }}
                 >
-                  {item.key}
+                  {item.name}
                 </Chip>
               </Box>
             );

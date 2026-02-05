@@ -40,7 +40,7 @@ const CustomButton = ({
           selectionAsync();
           onPress?.(e);
         }}
-        children={<>{loading ? <Spinner color={"white"} /> : children}</>}
+        children={loading ? <Spinner color={"white"} /> : children}
         {...props}
       />
     </Animated.View>

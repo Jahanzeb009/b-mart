@@ -15,11 +15,16 @@ export const ChipsContainer = forwardRef<
 >(({ categories, onPress, selectedCategory }, ref) => {
   const { colors } = useTheme();
 
+  categories = categories.sort((a, b) => {
+    if (a.name === "all") return -1;
+    if (b.name === "all") return 1;
+    return 0;
+  });
   return (
     <FlatList
       horizontal
       ref={ref}
-      data={[{ key: "all", id: "all" }, ...categories]}
+      data={categories}
       showsHorizontalScrollIndicator={false}
       keyExtractor={(item) => item.id}
       contentContainerStyle={{
@@ -28,6 +33,9 @@ export const ChipsContainer = forwardRef<
         // paddingTop: headerHeight + 15,
       }}
       renderItem={({ item, index }) => {
+        const isSelected = selectedCategory.id
+          ? selectedCategory?.id === item.id
+          : selectedCategory?.name === item.name;
         return (
           <RectButton
             style={{
@@ -39,26 +47,17 @@ export const ChipsContainer = forwardRef<
               textStyle={{ textTransform: "capitalize" }}
               style={{
                 borderWidth: 1,
-                borderColor:
-                  selectedCategory?.id === item.id
-                    ? colors.primary
-                    : colors.border,
+                borderColor: isSelected ? colors.primary : colors.border,
               }}
-              // theme={{ colors: { primary: colors.primary } }}
-              // selectedColor=""
               theme={{
                 roundness: 5,
                 colors: {
-                  secondaryContainer:
-                    selectedCategory?.id === item.id
-                      ? colors.primary
-                      : colors.card,
-                  onSecondaryContainer:
-                    selectedCategory?.id === item.id ? "white" : colors.text,
+                  secondaryContainer: isSelected ? colors.primary : colors.card,
+                  onSecondaryContainer: isSelected ? "white" : colors.text,
                 },
               }}
             >
-              {item.key}
+              {item.name}
             </Chip>
           </RectButton>
         );

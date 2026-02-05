@@ -5,18 +5,14 @@ import {
   ActivityIndicator,
   Platform,
   ScrollView,
+  StyleSheet,
 } from "react-native";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "@react-navigation/native";
-import { router, Stack } from "expo-router";
+import { router, Stack, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconButton, Searchbar } from "react-native-paper";
-import {
-  deleteProducts,
-  ErrorLog,
-  getCategoriesRealTime,
-  getProductsRealTime,
-} from "@/src/network";
+import { deleteProducts, getCategories, getProductList } from "@/src/network";
 import { ProductRenderItem } from "@/components/ProductRenderItem";
 import * as Haptics from "expo-haptics";
 import { ProductCategoryTypes, ProductTypes } from "@/src/types";
@@ -25,7 +21,6 @@ import Fuse from "fuse.js";
 import { RectButton } from "react-native-gesture-handler";
 import { FlashList, FlashListRef } from "@shopify/flash-list";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useDeviceType } from "@/src/utils";
 import { Trash2, Plus } from "lucide-react-native";
 import { debounce } from "lodash";
 import { ChipsContainer } from "@/components/ChipsContainer";
@@ -33,41 +28,15 @@ import { VStack } from "@/components/ui/vstack";
 import { SkeletonView } from "@/components/SkeletonView";
 import { FabButton } from "@/components/FabButton";
 
-// const List = Platform.select({
-//   android: FlashList,
-//   ios: FlashList,
-//   // @ts-ignore
-//   web: FlatList,
-// });
-
-// const formatData = (
-//   data: (ProductTypes | null)[],
-//   numColumns: number
-// ): (ProductTypes | null)[] => {
-//   const newData = [...data];
-//   const remainder = newData.length % numColumns;
-
-//   if (remainder !== 0) {
-//     const itemsToAdd = numColumns - remainder;
-//     for (let i = 0; i < itemsToAdd; i++) {
-//       newData.push(null);
-//     }
-//   }
-
-//   return newData;
-// };
-
 const options = {
-  keys: ["product_name", "product_invoice", "product_mrp", "product_category"],
+  keys: ["name", "invoice", "mrp", "category_id"],
   threshold: 0.3,
   includeScore: true,
 };
 
 let fuse: Fuse<ProductTypes>;
-let originalData: ProductTypes[] = [];
 
 const setupFuse = (data: ProductTypes[]) => {
-  originalData = data;
   fuse = new Fuse(data, options);
 };
 
@@ -75,8 +44,6 @@ const Home = () => {
   const { colors } = useTheme();
 
   const inset = useSafeAreaInsets();
-
-  const { currentDevice } = useDeviceType();
 
   let { width } = useWindowDimensions();
   width -= 30 + 15;
@@ -87,23 +54,21 @@ const Home = () => {
   const [isEditingMode, setIsEditingMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [categories, setCategories] = useState<ProductCategoryTypes[]>([]);
-  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [queryText, setQueryText] = useState("");
+
+  const [filterData, setFilterData] = useState<ProductTypes[]>([]);
   const [selectedCategory, setSelectedCategory] =
     useState<ProductCategoryTypes>({
-      id: "all",
-      key: "all",
+      id: "",
+      name: "all",
     });
-
-  // const searchProducts = (query: string): ProductTypes[] => {
-  //   return;
-  // };
 
   const flatRef = useRef<FlatList>(null);
   const ListRef = useRef<FlashListRef<ProductTypes[]> | null>(null);
   const ScrollViewRef = useRef<ScrollView | null>(null);
 
   const toggleSelect = (id: string) => {
-    Haptics.selectionAsync(); // light tap feedback
+    Haptics.selectionAsync();
 
     setSelectedIds((prev) => {
       const newSet = new Set(prev);
@@ -116,50 +81,54 @@ const Home = () => {
     });
   };
 
-  useEffect(() => {
-    const categoriesSub = getCategoriesRealTime((category) => {
-      try {
-        setCategories(category);
-        AsyncStorage.setItem("@categories", JSON.stringify(category));
-      } catch (e) {
-        ErrorLog("categoriesSub = getCategoriesRealTime", e);
-      } finally {
-        setIsLoading(false);
-      }
-    });
-    const productSub = getProductsRealTime(setIsLoadingData, (products) => {
-      try {
-        setProductList(products);
-        setFilterData(products);
-        setupFuse(products);
-      } catch (e) {
-        ErrorLog("productSub = getProductsRealTime", e);
-      } finally {
-        setIsLoading(false);
-        // setIsLoading(false);
-      }
-    });
+  const _getProducts = async () => {
+    try {
+      const products = await getProductList();
+      products.sort((a, b) => {
+        const _a = new Date(a.updated_at!);
+        const _b = new Date(b.updated_at!);
 
-    return () => {
-      productSub?.();
-      categoriesSub?.();
-    };
-  }, []);
+        return _b.getTime() - _a.getTime();
+      });
+      setProductList(products);
+      setFilterData(products);
+      setupFuse(products);
+    } catch (e) {
+      console.log("_getProducts error ", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const _getCategories = async () => {
+    try {
+      const categories = await getCategories();
+      setCategories(categories);
+      AsyncStorage.setItem("@categories", JSON.stringify(categories));
+    } catch (e) {
+      console.log("_getCategories error ", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const [queryText, setQueryText] = useState("");
-
-  const [filterData, setFilterData] = useState<ProductTypes[]>([]);
+  useFocusEffect(
+    useCallback(() => {
+      setIsLoading(true);
+      _getProducts();
+      _getCategories();
+    }, []),
+  );
 
   // Debounced search function
   const debouncedSearch = useCallback(
     debounce((query) => {
       setQueryText(query);
     }, 250),
-    []
+    [],
   );
 
   // Handle text input change
-  const handleSearchChange = (text) => {
+  const handleSearchChange = (text: string) => {
     debouncedSearch(text);
   };
 
@@ -170,10 +139,8 @@ const Home = () => {
     let filtered = [...productList];
 
     // 1. Category filter
-    if (selectedCategory && selectedCategory.key !== "all") {
-      filtered = filtered.filter(
-        (p) => p.product_category === selectedCategory.key.toLowerCase()
-      );
+    if (selectedCategory && selectedCategory.name !== "all") {
+      filtered = filtered.filter((p) => p.category_id === selectedCategory.id);
     }
 
     // 2. Search with Fuse.js
@@ -186,62 +153,35 @@ const Home = () => {
     ListRef?.current?.scrollToTop({ animated: true });
   }, [queryText, selectedCategory, productList, ListRef.current]);
 
-  // const debounceSearch = useCallback(
-  //   debounce((queryText: string) => {
-  //     console.log("queringggggg");
-  //     if (queryText.trim()) {
-  //       setFilterData(fuse.search(queryText).map((result) => result.item));
-  //       return;
-  //     }
-
-  //     // if (selectedCategory?.key === "all") {
-  //     //   setFilterData(productList);
-  //     //   return;
-  //     // }
-
-  //     setFilterData(
-  //       productList.filter((product) => {
-  //         if (selectedCategory.key === "all") return true;
-  //         return product.product_category === selectedCategory?.key;
-  //       })
-  //     );
-  //   }, 250),
-  //   [productList]
-  // );
-
-  // useEffect(() => {
-  //   return () => {
-  //     debounceSearch.cancel();
-  //   };
-  // }, [debounceSearch]);
-
   const onPressFab = async () => {
-    Haptics.selectionAsync(); // light tap feedback
+    Haptics.selectionAsync();
     if (isEditingMode) {
       if (!selectedIds.size) return;
       try {
         setIsLoading(true);
         const isDone = await deleteProducts(selectedIds);
+        console.log("isDone -> ", JSON.stringify(isDone, null, 2));
 
         if (isDone) {
-          // getProducts();
           setIsEditingMode(false);
+          await _getProducts();
         }
       } catch (error) {
         console.log("error deleting product", error);
       } finally {
         setIsLoading(false);
       }
-    } else
+    } else {
       router.navigate({
         pathname: "/addProduct",
         params: {
           selectedCategory:
-            selectedCategory.key === "all"
+            selectedCategory.name === "all"
               ? JSON.stringify({})
               : JSON.stringify(selectedCategory),
         },
       });
+    }
   };
 
   const renderProduct = useCallback(
@@ -259,7 +199,7 @@ const Home = () => {
         />
       );
     },
-    [isEditingMode, categories, selectedIds.size]
+    [isEditingMode, categories, selectedIds.size],
   );
 
   return (
@@ -310,10 +250,7 @@ const Home = () => {
                       "show-all-categories-sheet",
                       {
                         payload: {
-                          categories: [
-                            { key: "all", id: "all" },
-                            ...categories,
-                          ],
+                          categories,
                           selectedCategory,
                           onPress(index) {
                             flatRef.current?.scrollToIndex({
@@ -322,7 +259,7 @@ const Home = () => {
                             });
                           },
                         },
-                      }
+                      },
                     );
 
                     if (val) setSelectedCategory(val);
@@ -376,13 +313,12 @@ const Home = () => {
             categories={categories}
             selectedCategory={selectedCategory}
             onPress={(item) => {
-              if (item.key !== "all") {
+              if (item.name !== "all")
                 setupFuse(
-                  productList.filter((pro) => pro.product_category === item.key)
+                  productList.filter((pro) => pro.category_id === item.id),
                 );
-              } else {
-                setupFuse(productList);
-              }
+              else setupFuse(productList);
+
               Haptics.selectionAsync();
               setSelectedCategory(item);
               if (Platform.OS === "web") {
@@ -392,8 +328,9 @@ const Home = () => {
               }
             }}
           />
-          {/* <Animated.View entering={FadeInUp} exiting={FadeOutUp}> */}
+
           {showSearch && (
+            // @ts-ignore
             <Searchbar
               placeholder="Search Product"
               onChangeText={handleSearchChange}
@@ -419,10 +356,10 @@ const Home = () => {
         </View>
 
         <View style={{ flex: 1 }}>
-          {isLoadingData && (
-            <ScrollView scrollEventThrottle={16} decelerationRate={"fast"}>
+          {isLoading && Platform.OS === "web" && (
+            <ScrollView style={StyleSheet.absoluteFillObject}>
               <VStack className="flex-wrap flex-row">
-                {Array.from({ length: 15 }).map((_, i) => {
+                {Array.from({ length: 9 }).map((_, i) => {
                   return <SkeletonView key={i} />;
                 })}
               </VStack>
@@ -431,6 +368,7 @@ const Home = () => {
 
           {Platform.OS !== "web" ? (
             <FlashList
+              // @ts-ignore
               ref={ListRef}
               masonry
               numColumns={2}

@@ -8,6 +8,7 @@ import CustomInput from "@/components/CustomInput";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CustomButton from "@/components/CustomButton";
 import { useTheme } from "@react-navigation/native";
+import { ButtonText } from "@/components/ui/button";
 
 const AddCategorySheet = (props: SheetProps<"add-category-sheet">) => {
   const [categoryName, setCategoryName] = useState("");
@@ -36,7 +37,7 @@ const AddCategorySheet = (props: SheetProps<"add-category-sheet">) => {
             }}
             style={{ marginBottom: inset.bottom + 15 }}
           >
-            Save
+            <ButtonText className="color-white">Save</ButtonText>
           </CustomButton>
         </View>
       }

@@ -1,45 +1,55 @@
 import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDocs,
-  onSnapshot,
-  orderBy,
-  query,
-  updateDoc,
-} from "firebase/firestore";
-import { db } from "./firebase";
-import { ProductCategoryTypes, ProductTypes } from "../types";
-import { Dispatch, SetStateAction } from "react";
+  ProductCategoryTypes,
+  ProductInsertTypes,
+  ProductTypes,
+  ProductUpdateTypes,
+} from "../types";
+import { supabase } from "./supabase";
+import { STORAGE, TABLES } from "./contants";
+import { Alert } from "react-native";
+import { decode } from "base64-arraybuffer";
 
 export const ErrorLog = (name: string, error: unknown) =>
   console.log(`${name} -> `, error);
 
-const COLLECTIONS = {
-  products: "products",
-  categories: "categories",
-};
-const addCategory = async (key: string) => {
+const addCategory = async (name: string) => {
   try {
-    const ref = collection(db, COLLECTIONS.categories);
-    await addDoc(ref, {
-      key,
-    });
+    const { error, data } = await supabase
+      .from(TABLES.categories)
+      .insert({
+        name,
+      })
+      .select("*")
+      .single();
+
+    return { data, error };
   } catch (e) {
     ErrorLog("Error adding category", e);
   }
 };
 
-const getCategories = async () => {
+export const createCategory = async (categoryName: string) => {
+  const { data, error } = await supabase
+    .from(TABLES.categories)
+    .insert([
+      { name: categoryName }, // We only supply the name
+    ])
+    .select(); // Use .select() to return the inserted data
+
+  if (error) {
+    console.error("Error creating category:", error.message);
+    return null;
+  }
+
+  // data will be an array of the inserted rows. We take the first one.
+  console.log("New category created:", data[0]);
+  return data;
+};
+
+const getCategories = async (): Promise<ProductCategoryTypes[]> => {
   try {
-    const ref = collection(db, COLLECTIONS.categories);
-    const querySnapshot = await getDocs(ref);
-    const categories = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    return categories;
+    const { data } = await supabase.from(TABLES.categories).select("*");
+    return data as ProductCategoryTypes[];
   } catch (error) {
     ErrorLog("Error fetching categories", error);
     return [];
@@ -48,8 +58,29 @@ const getCategories = async () => {
 
 const deleteProducts = async (products: Set<string>) => {
   try {
-    for (const id of products) {
-      await deleteDoc(doc(db, COLLECTIONS.products, id));
+    const ids = Array.from(products);
+
+    // 1. Delete images from storage
+    const imagePaths = ids.map((id) => `${id}.png`);
+
+    const { error: storageError } = await supabase.storage
+      .from(STORAGE.BUCKET.product_images)
+      .remove(imagePaths);
+    if (storageError) {
+      ErrorLog("deleteProducts storage error", storageError);
+      return false;
+      // optional: return false if image delete is critical
+    }
+
+    // 2. Delete products from table
+    const { error: dbError } = await supabase
+      .from(TABLES.products)
+      .delete()
+      .in("id", ids);
+
+    if (dbError) {
+      ErrorLog("deleteProducts db error", dbError);
+      return false;
     }
 
     return true;
@@ -59,116 +90,102 @@ const deleteProducts = async (products: Set<string>) => {
   }
 };
 
-const getProductsRealTime = (
-  setState: Dispatch<SetStateAction<boolean>>,
-  cb: (products: ProductTypes[]) => void
-) => {
-  try {
-    setState?.(true);
-    const q = query(
-      collection(db, COLLECTIONS.products),
-      orderBy("last_updated_at", "desc")
-    );
-    const sub = onSnapshot(q, (snapshot) => {
-      const products =
-        snapshot?.docs?.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) ?? [];
-      setState?.(false);
-      cb?.(products as ProductTypes[]);
-    });
-
-    return sub;
-  } catch (e) {
-    ErrorLog("getProductsRealTime", e);
-    setState?.(false);
-    return null;
-  }
-};
-const getCategoriesRealTime = (
-  cb: (products: ProductCategoryTypes[]) => void
-) => {
-  try {
-    const sub = onSnapshot(
-      collection(db, COLLECTIONS.categories),
-      (snapshot) => {
-        const products = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        cb?.(products as ProductCategoryTypes[]);
-      }
-    );
-
-    return sub;
-  } catch (e) {
-    ErrorLog("getCategoriesRealTime", e);
-    return null;
-  }
-};
-
 const getProductList = async () => {
   try {
-    const ref = collection(db, COLLECTIONS.products);
-    const querySnapshot = await getDocs(ref);
-    const products = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    return products as ProductTypes[];
+    const { data, error } = await supabase.from(TABLES.products).select("*");
+    return data as ProductTypes[];
   } catch (error) {
     ErrorLog("Error fetching products", error);
     return [];
   }
 };
 
-const updateProduct = async (
-  productId: string,
-  data: Omit<ProductTypes, "id">
-) => {
+const updateProduct = async ({ id, ...data }: Partial<ProductUpdateTypes>) => {
   try {
-    const ref = doc(db, COLLECTIONS.products, productId);
-    await updateDoc(ref, { ...data });
+    const res = await supabase
+      .from(TABLES.products)
+      .update(data)
+      .eq("id", id)
+      .select("*");
 
-    return true;
+    return res;
   } catch (error) {
     ErrorLog("Error updating product", error);
     return false;
   }
 };
 
-const saveProduct = async (data: Omit<ProductTypes, "id">) => {
+const saveProduct = async (data: ProductInsertTypes) => {
   try {
-    const ref = collection(db, COLLECTIONS.products);
-    await addDoc(ref, data);
-    return true;
+    const res = await supabase
+      .from(TABLES.products)
+      .insert(data)
+      .select("*")
+      .single();
+    return res;
+  } catch (error) {
+    ErrorLog("Error saving product", error);
+    return false;
+  }
+};
+const updateProductInfo = async ({
+  id,
+  ...data
+}: Partial<ProductUpdateTypes>) => {
+  try {
+    const res = await supabase
+      .from(TABLES.products)
+      .update(data)
+      .eq("id", id)
+      .select("*");
+    return res;
   } catch (error) {
     ErrorLog("Error saving product", error);
     return false;
   }
 };
 
-const deleteProduct = async (productId: string) => {
-  try {
-    const ref = doc(db, COLLECTIONS.products, productId);
-    await deleteDoc(ref);
+const uploadProductImage = async ({
+  product_id,
+  base64,
+  filename,
+  mimeType = "image/png",
+}: {
+  product_id: string;
+  base64: string;
+  filename: string;
+  mimeType?: string;
+}) => {
+  const path = `${product_id}/${filename}`;
 
-    return true;
-  } catch (error) {
-    ErrorLog("Error deleting product", error);
-    return false;
+  const { data, error } = await supabase.storage
+    .from(STORAGE.BUCKET.product_images)
+    .upload(path, decode(base64), {
+      // Assuming 'decode' function for Base64 -> ArrayBuffer/Blob
+      contentType: mimeType,
+      upsert: true, // Overwrite if an image for this product ID already exists
+    });
+
+  if (error) {
+    console.log(JSON.stringify(error, null, 2));
+    Alert.alert(error?.message);
+    return;
   }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(STORAGE.BUCKET.product_images).getPublicUrl(path);
+
+  return publicUrl;
 };
 
 export {
   getProductList,
   updateProduct,
-  deleteProduct,
   saveProduct,
   deleteProducts,
   getCategories,
   addCategory,
-  getProductsRealTime,
-  getCategoriesRealTime,
+  updateProductInfo,
+  uploadProductImage,
 };

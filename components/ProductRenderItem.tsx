@@ -1,20 +1,11 @@
-import { ProductTypes } from "@/src/types";
+import { ProductCategoryTypes, ProductTypes } from "@/src/types";
 import { formatCurrency, useDeviceType } from "@/src/utils";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@react-navigation/native";
 import { router } from "expo-router";
 import { memo, useEffect } from "react";
-import {
-  Platform,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-  Image as RNImage,
-} from "react-native";
+import { Platform, useWindowDimensions, Image as RNImage } from "react-native";
 import * as Haptics from "expo-haptics";
-import CustomImage from "./CustomImage";
-import Animated from "react-native-reanimated";
-import TextTicker from "react-native-text-ticker";
 import { useMediaQuery } from "@gluestack-ui/utils/hooks";
 import { Image } from "./ui/image";
 import { Text } from "./ui/text";
@@ -22,7 +13,6 @@ import { Heading } from "./ui/heading";
 import { Card } from "./ui/card";
 import { HStack } from "./ui/hstack";
 import { VStack } from "./ui/vstack";
-import FastImage from "@d11/react-native-fast-image";
 import { Pressable } from "./ui/pressable";
 import { Box } from "./ui/box";
 
@@ -42,49 +32,22 @@ export const ProductRenderItem = memo(
     onLongPress: () => void;
     onPress: (id: string) => void;
     isSelected: boolean;
-    categories: { key: string; id: string }[];
+    categories: ProductCategoryTypes[];
   }) => {
     let { dark, colors } = useTheme();
 
     const { height, width } = useWindowDimensions();
 
-    const { currentDevice } = useDeviceType();
-
-    const PADDING = 15;
-    const GAP = 0;
-    // const IMAGE_SIZE = (width - PADDING * 2 - 10 - 5) / 2;
-    const IMAGE_SIZE = width * 0.15;
-
-    const [isMobile, isTablet, isSmallScreen, isLargeScreen] = useMediaQuery([
-      {
-        maxWidth: 480,
-      },
-      // {
-      //   minWidth: 481,
-      //   maxWidth: 768,
-      // },
-      // {
-      //   minWidth: 769,
-      //   maxWidth: 1440,
-      // },
-      // {
-      //   minWidth: 1441,
-      // },
-    ]);
-
-    // const { height, width } = useWindowDimensions();
     let w = width;
     let h = w;
 
     useEffect(() => {
-      if (!item.product_image) return;
-      RNImage.getSize(item.product_image, (width, height) => {
-        // setSize({ width, height });
-        // console.log({ width, height });
+      if (!item.image) return;
+      RNImage.getSize(item.image, (width, height) => {
         w = width;
         h = height;
       });
-    }, [item.product_image]);
+    }, [item.image]);
 
     const aspectRatio = w / h;
     const displayWidth = width * 0.4;
@@ -112,27 +75,35 @@ export const ProductRenderItem = memo(
               Haptics.selectionAsync();
               router.navigate({
                 pathname: "/productDetails",
+                // @ts-ignore
                 params: {
                   ...item,
+                  ...(item.extra_attachments
+                    ? {
+                        extra_attachments: JSON.stringify(
+                          item.extra_attachments,
+                        ),
+                      }
+                    : {}),
                   categories: JSON.stringify(categories),
-                  last_updated_at: item.last_updated_at
-                    ?.toDate()
-                    .toLocaleString(),
+                  updated_at: item.updated_at,
                 },
               });
             }}
           >
-            {(!!item.product_image || Platform.OS === "web") && (
+            {(!!item.image || Platform.OS === "web") && (
               <Image
                 source={
-                  item.product_image
-                    ? { uri: item.product_image }
+                  item.image
+                    ? { uri: item.image }
                     : require("../assets/images/icon_grey.png")
                 }
                 className={`mb-[10px] h-[150px] sm:h-[250px] overflow-hidden w-full rounded-none`}
                 alt="image"
                 resizeMode="cover"
-                onError={(e) => console.log(e?.nativeEvent?.error)}
+                onError={(e) =>
+                  console.log("image error -> ", e?.nativeEvent?.error)
+                }
                 style={{
                   width: "100%",
                   overflow: "hidden",
@@ -140,18 +111,18 @@ export const ProductRenderItem = memo(
                 }}
               />
             )}
-            <Box className="p-2">
+            <Box className="p-2 gap-2">
               <Heading size="md" className="mb-2">
-                {item.product_name}
+                {item.name}
               </Heading>
 
-              <HStack className="justify-evenly">
+              <HStack className="justify-evenly gap-1">
                 <VStack className="justify-between flex items-center w-1/2 align-middle gap-1">
                   <Text className="text-sm font-normal mb-2 text-typography-700">
                     Invoice
                   </Text>
                   <Text className="text-xl font-normal mb-2 text-typography-700">
-                    {formatCurrency(+item.product_invoice)}
+                    {formatCurrency(+item.invoice)}
                   </Text>
                 </VStack>
                 <VStack className="justify-between gap-1 items-center w-1/2">
@@ -159,7 +130,7 @@ export const ProductRenderItem = memo(
                     MRP
                   </Text>
                   <Text className="text-xl font-normal mb-2 text-typography-700">
-                    {formatCurrency(+item.product_mrp)}
+                    {formatCurrency(+item.mrp)}
                   </Text>
                 </VStack>
               </HStack>
@@ -189,365 +160,5 @@ export const ProductRenderItem = memo(
         </Card>
       </VStack>
     );
-
-    return (
-      <Card
-        mode="contained"
-        theme={{
-          colors: {
-            surfaceVariant: colors.card,
-          },
-        }}
-        onLongPress={onLongPress}
-        onPress={() => {
-          if (isEditingMode) {
-            onPress?.(item.id);
-            return;
-          }
-          Haptics.selectionAsync();
-          router.navigate({
-            pathname: "/productDetails",
-            params: {
-              ...item,
-              categories: JSON.stringify(categories),
-              last_updated_at: item.last_updated_at?.toDate().toLocaleString(),
-            },
-          });
-        }}
-        style={{
-          marginTop: 10,
-          flex: 1,
-          marginRight: index % 2 === 0 && currentDevice !== "mobile" ? 10 : 0,
-        }}
-        contentStyle={{
-          flexDirection: "row",
-          borderWidth: 1,
-          borderRadius: 10,
-          gap: 10,
-          borderColor: colors.primary + 50,
-          overflow: "hidden",
-        }}
-      >
-        <Animated.View>
-          {item.product_image ? (
-            <CustomImage
-              width={IMAGE_SIZE}
-              height={IMAGE_SIZE}
-              // width={IMAGE_SIZE}
-              // height={displayHeight}
-              source={{ uri: item.product_image }}
-              resizeMode="contain"
-              // style={{
-              //   minHeight: IMAGE_SIZE,
-              //   minWidth: IMAGE_SIZE,
-              // }}
-            />
-          ) : (
-            <CustomImage
-              source={require("../assets/images/icon_grey.png")}
-              width={IMAGE_SIZE}
-              height={IMAGE_SIZE}
-              resizeMode="cover"
-              // style={{ minHeight: IMAGE_SIZE, minWidth: IMAGE_SIZE }}
-            />
-          )}
-        </Animated.View>
-
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            // backgroundColor: "blue",
-          }}
-        >
-          {/* title */}
-          <Text
-            variant="titleMedium"
-            style={{
-              // textAlign: "center",
-              color: colors.text,
-              fontWeight: "bold",
-            }}
-          >
-            {item.product_name}
-          </Text>
-          {/* <View
-            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-          >
-            <TextTicker
-              style={{
-                fontSize: 18,
-                textAlign: "center",
-                color: colors.text,
-                fontWeight: "bold",
-              }}
-              duration={item.product_name.length * 400}
-              loop
-              bounce
-              repeatSpacer={50}
-              marqueeDelay={1000}
-            >
-              {item.product_name}
-            </TextTicker>
-          </View> */}
-
-          {/* <View
-            style={{ flexDirection: "row", justifyContent: "space-evenly" }}
-          >
-            <Text style={{ color: colors.text, textAlign: "center" }}>
-              Invoice
-            </Text>
-
-            <Text
-              style={{
-                color: colors.text,
-                fontWeight: "bold",
-                textAlign: "center",
-              }}
-              variant="bodyMedium"
-            >
-              {formatCurrency(+item.product_invoice)}
-            </Text>
-
-            <Divider
-              style={{
-                height: "100%",
-                width: 1,
-                backgroundColor: colors.text,
-              }}
-            />
-
-            <Text style={{ color: colors.text, textAlign: "center" }}>MRP</Text>
-
-            <Text
-              style={{
-                color: colors.text,
-                fontWeight: "bold",
-                textAlign: "center",
-              }}
-              variant="bodyMedium"
-            >
-              {formatCurrency(+item.product_mrp)}
-            </Text>
-          </View>
-          */}
-        </View>
-
-        <View
-          style={{
-            paddingRight: 15,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Text
-            variant="bodySmall"
-            style={{ color: colors.text, textAlign: "center", opacity: 0.8 }}
-          >
-            (MRP)
-          </Text>
-          <Text
-            style={{
-              color: colors.text,
-              opacity: 0.9,
-              fontWeight: "bold",
-              textAlign: "center",
-            }}
-            variant="bodyMedium"
-          >
-            {formatCurrency(+item.product_mrp)}
-          </Text>
-        </View>
-
-        {isEditingMode && (
-          <View
-            pointerEvents="none"
-            style={[
-              StyleSheet.absoluteFillObject,
-              {
-                padding: 15,
-                alignItems: "flex-end",
-                backgroundColor: dark ? "#0006" : "#fff6",
-              },
-            ]}
-          >
-            <MaterialCommunityIcons
-              size={24}
-              color={colors.text}
-              name={
-                isSelected
-                  ? "checkbox-marked-circle"
-                  : "checkbox-blank-circle-outline"
-              }
-            />
-          </View>
-        )}
-      </Card>
-    );
-
-    // return (
-    //   <View
-    //     style={{
-    //       flex: 1,
-    //       marginTop: 5,
-    //       padding: 5,
-    //     }}
-    //   >
-    //     <Card
-    //       style={{
-    //         flex: 1,
-    //         borderRadius: 10,
-    //         overflow: "hidden",
-    //         borderWidth: 1,
-    //         borderColor: colors.border,
-    //       }}
-    //       onLongPress={onLongPress}
-    //       onPress={() => {
-    //         if (isEditingMode) {
-    //           onPress?.(item.id);
-    //           return;
-    //         }
-    //         Haptics.selectionAsync();
-    //         router.navigate({
-    //           pathname: "/productDetails",
-    //           params: {
-    //             ...item,
-    //             categories: JSON.stringify(categories),
-    //             last_updated_at: item.last_updated_at
-    //               ?.toDate()
-    //               .toLocaleString(),
-    //           },
-    //         });
-    //       }}
-    //       mode="contained"
-    //       theme={{
-    //         colors: {
-    //           surfaceVariant: colors.card,
-    //         },
-    //       }}
-    //     >
-    //       {item.product_image && (
-    //         <CustomImage
-    //           width={IMAGE_SIZE}
-    //           height={displayHeight}
-    //           source={{ uri: item.product_image }}
-    //           resizeMode="contain"
-    //         />
-    //       )}
-
-    //       <Card.Title
-    //         title={item.product_name}
-    //         titleNumberOfLines={2}
-    //         titleStyle={{
-    //           textAlign: "center",
-    //           color: colors.text,
-    //           fontWeight: "bold",
-    //           marginVertical: 5,
-    //         }}
-    //       />
-
-    //       <Divider />
-    //       <View
-    //         style={{
-    //           flexDirection: "row",
-    //           paddingBottom: 15,
-    //           gap: 5,
-    //           paddingHorizontal: 5,
-    //         }}
-    //       >
-    //         {/* invoice */}
-    //         <View
-    //           style={{
-    //             flex: 1,
-    //           }}
-    //         >
-    //           <HelperText
-    //             style={{ color: colors.text, textAlign: "center" }}
-    //             type="info"
-    //           >
-    //             Invoice
-    //           </HelperText>
-    //           <View
-    //             style={{
-    //               flex: 1,
-    //               justifyContent: "center",
-    //               alignItems: "center",
-    //             }}
-    //           >
-    //             <Text
-    //               style={{
-    //                 color: colors.text,
-    //                 fontWeight: "bold",
-    //                 textAlign: "center",
-    //               }}
-    //               variant="titleMedium"
-    //             >
-    //               {formatCurrency(+item.product_invoice)}
-    //             </Text>
-    //           </View>
-    //         </View>
-    //         {/* vertical divider */}
-    //         <Divider
-    //           style={{ height: "100%", width: StyleSheet.hairlineWidth }}
-    //         />
-    //         {/* mrp */}
-    //         <View
-    //           style={{
-    //             flex: 1,
-    //           }}
-    //         >
-    //           <HelperText
-    //             style={{ color: colors.text, textAlign: "center" }}
-    //             type="info"
-    //           >
-    //             MRP
-    //           </HelperText>
-
-    //           <View
-    //             style={{
-    //               flex: 1,
-    //               justifyContent: "center",
-    //               alignItems: "center",
-    //             }}
-    //           >
-    //             <Text
-    //               style={{
-    //                 color: colors.text,
-    //                 fontWeight: "bold",
-    //                 textAlign: "center",
-    //               }}
-    //               variant="titleMedium"
-    //             >
-    //               {formatCurrency(+item.product_mrp)}
-    //             </Text>
-    //           </View>
-    //         </View>
-    //       </View>
-    //       {isEditingMode && (
-    //         <View
-    //           pointerEvents="none"
-    //           style={[
-    //             StyleSheet.absoluteFillObject,
-    //             {
-    //               padding: 15,
-    //               alignItems: "flex-end",
-    //               backgroundColor: dark ? "#0006" : "#fff6",
-    //             },
-    //           ]}
-    //         >
-    //           <MaterialCommunityIcons
-    //             size={24}
-    //             color={colors.text}
-    //             name={
-    //               isSelected
-    //                 ? "checkbox-marked-circle"
-    //                 : "checkbox-blank-circle-outline"
-    //             }
-    //           />
-    //         </View>
-    //       )}
-    //     </Card>
-    //   </View>
-    // );
-  }
+  },
 );

@@ -1,25 +1,29 @@
-import { Alert, Platform, StyleSheet, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+} from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { forwardRef, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTheme } from "@react-navigation/native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
-import { addCategory, saveProduct, updateProduct } from "@/src/network";
-import { Timestamp } from "firebase/firestore";
-import { ProductTypes } from "@/src/types";
+import { ref } from "firebase/storage";
+import {
+  addCategory,
+  saveProduct,
+  updateProduct,
+  uploadProductImage,
+} from "@/src/network";
+import { ProductCategoryTypes, ProductTypes } from "@/src/types";
 import { storage } from "@/src/network/firebase";
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { generateImageUrl } from "@/components/GenerateImageUrl";
-import CustomImage from "@/components/CustomImage";
 import { selectionAsync } from "expo-haptics";
-import {
-  MenuAction,
-  MenuComponentRef,
-  MenuView,
-} from "@react-native-menu/menu";
+import { MenuComponentRef } from "@react-native-menu/menu";
 import { SheetManager } from "react-native-actions-sheet";
 import CustomInput from "@/components/CustomInput";
-import CustomButton from "@/components/CustomButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import MenuItem from "@/components/CustomMenu";
@@ -29,12 +33,24 @@ import { VStack } from "@/components/ui/vstack";
 import { Image } from "@/components/ui/image";
 import { Box } from "@/components/ui/box";
 import { Icon } from "@/components/ui/icon";
-import { Camera } from "lucide-react-native";
+import { Camera, Save } from "lucide-react-native";
+import { Text } from "@/components/ui/text";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Crypto from "expo-crypto";
+
+const isBase64String = (str: string) => {
+  return str.startsWith("data:image");
+};
+
+const removeBase64String = (str: string) => {
+  return str.replace(/^data:image\/[a-z]+;base64,/, "");
+};
 
 const AddProductScreen = () => {
   const { colors } = useTheme();
 
   const inputRefs = useRef<Record<string, TextInput | null>>({});
+  const inset = useSafeAreaInsets();
 
   const getRef = (name: string) => (ref: TextInput | null) => {
     inputRefs.current[name] = ref;
@@ -86,19 +102,22 @@ const AddProductScreen = () => {
       ? JSON.parse(params.selectedCategory)
       : params?.selectedCategory;
 
-  const [categories, setCategories] = useState<{ key: string; id: string }[]>(
-    []
-  );
+  const [categories, setCategories] = useState<ProductCategoryTypes[]>([]);
 
   const [productInfo, setProductInfo] = useState<Omit<ProductTypes, "id">>({
-    product_image: "",
-    product_name: "",
-    product_mrp: "",
-    product_invoice: "",
-    last_updated_at: null,
-    product_category: selectedCategory?.key ?? "",
-    product_extra_info: "",
+    image: "",
+    name: "",
+    mrp: "",
+    invoice: "",
+    category_id: selectedCategory?.key ?? "",
+    extra_info: "",
+    extra_attachments: [],
   });
+
+  const extra_attachments: (typeof productInfo)["extra_attachments"] =
+    typeof productInfo.extra_attachments === "string"
+      ? JSON.parse(JSON.parse(productInfo.extra_attachments))
+      : productInfo.extra_attachments;
 
   const getCategories = async () => {
     let _categories = await AsyncStorage.getItem("@categories");
@@ -117,31 +136,35 @@ const AddProductScreen = () => {
 
     if (params?.isEditing) {
       setProductInfo({
-        last_updated_at: Timestamp.now(),
-        product_category: params.product_category,
-        product_invoice: params.product_invoice,
-        product_mrp: params.product_mrp,
-        product_name: params.product_name,
-        product_extra_info: params?.product_extra_info ?? "",
-        product_image: generateImageUrl(params.product_image),
+        category_id: params.category_id,
+        invoice: params.invoice,
+        mrp: params.mrp,
+        name: params.name,
+        extra_info: params?.extra_info ?? "",
+        extra_attachments:
+          typeof params.extra_attachments === "string"
+            ? JSON.parse(JSON.parse(params.extra_attachments))
+            : params.extra_attachments,
+        image: params.image,
       });
 
       inputRefs.current?.product_name?.focus();
     }
   }, []);
 
+  const isHttpsUrl = (str: string) => /^https:\/\//i.test(str);
+
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSaveProduct = async () => {
+  const handleUpdateProduct = async () => {
     try {
-      const { product_name, product_invoice, product_mrp, product_category } =
-        productInfo;
+      const { name, invoice, mrp, category_id } = productInfo;
 
       if (
-        !product_name.length ||
-        !product_category.length ||
-        !product_invoice.length ||
-        !product_mrp.length
+        !name.length ||
+        !category_id.length ||
+        !invoice.length ||
+        !mrp.length
       ) {
         setShowAlertDialog(true);
         return;
@@ -149,43 +172,156 @@ const AddProductScreen = () => {
 
       selectionAsync();
       setIsLoading(true);
-      const isHttpsUrl = (str: string) => /^https:\/\//i.test(str);
-      const isURL = isHttpsUrl(productInfo.product_image);
-      let product_image_url = "";
-      if (productInfo.product_image && !isURL) {
-        // await putFile(storageRef, productInfo.product_image);
-        let base64String = productInfo.product_image;
 
-        // Remove the data URL prefix if present
-        if (base64String.startsWith("data:image")) {
-          base64String = base64String.replace(
-            /^data:image\/[a-z]+;base64,/,
-            ""
-          );
+      const isURL = isHttpsUrl(productInfo.image);
+      let product_image_url = "";
+
+      if (productInfo.image && !isURL) {
+        let base64 = productInfo.image;
+
+        if (isBase64String(base64)) {
+          base64 = removeBase64String(base64);
         }
 
-        const response = await fetch(productInfo.product_image);
-        const blob = await response.blob();
-
-        await uploadBytesResumable(storageRef, blob);
-        product_image_url = await getDownloadURL(storageRef);
-      }
-      // console.log({ product_image_url });
-      if (params?.isEditing) {
-        await updateProduct(params.id, {
-          ...productInfo,
-          product_image: product_image_url || productInfo.product_image,
-          last_updated_at: Timestamp.now(),
+        const url = await uploadProductImage({
+          product_id: params.id,
+          base64,
+          filename: `${params.id}.png`,
         });
-        router.dismissTo("/");
+
+        if (url) product_image_url = url;
+      }
+
+      const attachments = [];
+
+      for (let { image: base64 } of productInfo.extra_attachments ?? []) {
+        /**
+         * while updating product, extra_attachments may contain existing images so if it's URL then we will simply push that url to attachemnts.
+         * */
+        if (isHttpsUrl(base64)) {
+          attachments.push({ image: base64 });
+          continue;
+        }
+
+        // remove any base64 string starting elements as per the supabase requirements
+        if (isBase64String(base64)) {
+          base64 = removeBase64String(base64);
+        }
+
+        const filename = `${Date.now()}.png`;
+
+        // upload the image then insert image url again.
+        const url = await uploadProductImage({
+          product_id: params.id,
+          base64,
+          filename,
+        });
+
+        if (url) attachments.push({ image: url });
+      }
+
+      const product_update_response = await updateProduct({
+        id: params.id,
+        image: product_image_url || productInfo.image,
+        category_id: productInfo.category_id,
+        extra_attachments: attachments,
+        extra_info: productInfo.extra_info,
+        invoice: productInfo.invoice,
+        mrp: productInfo.mrp,
+        name: productInfo.name,
+      });
+      console.log(
+        "product_update_response -> ",
+        JSON.stringify(product_update_response, null, 2),
+      );
+
+      if (product_update_response && product_update_response?.error) {
+        Alert.alert("Error", product_update_response?.error?.message);
         return;
       }
 
-      await saveProduct({
-        ...productInfo,
-        product_image: product_image_url,
-        last_updated_at: Timestamp.now(),
+      router.dismissTo("/");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveProduct = async () => {
+    try {
+      const { name, invoice, mrp, category_id } = productInfo;
+
+      if (
+        !name.length ||
+        !category_id.length ||
+        !invoice.length ||
+        !mrp.length
+      ) {
+        setShowAlertDialog(true);
+        return;
+      }
+
+      selectionAsync();
+      setIsLoading(true);
+
+      const product_id = Crypto.randomUUID();
+
+      // check if product image selected
+      let product_image_url = "";
+
+      if (productInfo.image) {
+        let base64 = productInfo.image;
+
+        // remove any base64 string starting elements as per the supabase requirements
+        if (isBase64String(base64)) {
+          base64 = removeBase64String(base64);
+        }
+        // upload the image then insert image url again.
+        const url = await uploadProductImage({
+          product_id,
+          base64,
+          filename: `product_image.png`,
+          // filename: `${product_id}.png`,
+        });
+        if (url) product_image_url = url;
+      }
+
+      const attachments = [];
+
+      for (let { image: base64 } of productInfo.extra_attachments ?? []) {
+        // remove any base64 string starting elements as per the supabase requirements
+        if (isBase64String(base64)) {
+          base64 = removeBase64String(base64);
+        }
+
+        const filename = `${Date.now()}.png`;
+
+        // upload the image then insert image url again.
+        const url = await uploadProductImage({
+          product_id,
+          base64,
+          filename,
+        });
+
+        if (url) attachments.push({ image: url });
+      }
+
+      const product_response = await saveProduct({
+        id: product_id,
+        category_id: productInfo.category_id,
+        extra_attachments: attachments,
+        extra_info: productInfo.extra_info,
+        invoice: productInfo.invoice,
+        mrp: productInfo.mrp,
+        name: productInfo.name,
+        image: product_image_url,
       });
+      console.log(JSON.stringify(product_response, null, 2));
+
+      if (product_response && product_response?.error) {
+        Alert.alert("Error", product_response?.error?.message);
+        return;
+      }
+
       router.back();
     } catch (error) {
       console.log({ error });
@@ -212,32 +348,34 @@ const AddProductScreen = () => {
         });
 
         if (!result.canceled) {
+          const asset = result.assets[0];
           // @ts-ignore
           inputRefs.current?.product_name.focus();
           setProductInfo((pre) => ({
             ...pre,
-            product_image: `data:${
-              result.assets[0].mimeType ?? "image/png"
-            };base64,${result.assets[0].base64!}`,
+            image: `data:${
+              asset.mimeType ?? "image/png"
+            };base64,${asset.base64!}`,
           }));
         }
       } else if (val === "pick_photo") {
         let result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: "images",
           allowsEditing: true,
-          aspect: [4, 3],
+          aspect: [1, 1],
           base64: true,
           quality: 1,
         });
 
         if (!result.canceled) {
+          const asset = result.assets[0];
           // @ts-ignore
           inputRefs.current?.product_name.focus();
           setProductInfo((pre) => ({
             ...pre,
-            product_image: `data:${
-              result.assets[0].mimeType ?? "image/png"
-            };base64,${result.assets[0].base64!}`,
+            image: `data:${
+              asset.mimeType ?? "image/png"
+            };base64,${asset.base64!}`,
           }));
         }
       }
@@ -248,7 +386,91 @@ const AddProductScreen = () => {
       //   if (preUploadedImage)
       //     setProductInfo((pre) => ({
       //       ...pre,
-      //       product_image: preUploadedImage,
+      //       image: preUploadedImage,
+      //     }));
+      // }
+    } catch (e) {
+      console.log({ e });
+    }
+  };
+
+  const onAttachmentImageDelete = (currentImage: string) => {
+    if (!Array.isArray(productInfo.extra_attachments)) {
+      return;
+    }
+
+    setProductInfo((pre) => ({
+      ...pre,
+      extra_attachments: pre.extra_attachments?.filter(
+        (_) => _?.image !== currentImage,
+      ),
+    }));
+  };
+
+  const onAttachmentSelect = async (val: string) => {
+    try {
+      if (val === "take_photo") {
+        await ImagePicker.requestCameraPermissionsAsync();
+
+        let result = await ImagePicker.launchCameraAsync({
+          cameraType: ImagePicker.CameraType.back,
+          allowsEditing: true,
+          quality: 0.5,
+          base64: true,
+        });
+
+        if (!result.canceled) {
+          const asset = result.assets[0];
+          // @ts-ignore
+          inputRefs.current?.product_name.focus();
+          setProductInfo((pre) => ({
+            ...pre,
+            extra_attachments: [
+              ...(Array.isArray(pre.extra_attachments)
+                ? pre.extra_attachments
+                : []),
+              {
+                image: `data:${
+                  asset.mimeType ?? "image/png"
+                };base64,${asset.base64!}`,
+              },
+            ],
+          }));
+        }
+      } else if (val === "pick_photo") {
+        let result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: "images",
+          allowsEditing: true,
+          aspect: [1, 1],
+          base64: true,
+          quality: 1,
+        });
+
+        if (!result.canceled) {
+          const asset = result.assets[0];
+          // @ts-ignore
+          inputRefs.current?.product_name.focus();
+          setProductInfo((pre) => ({
+            ...pre,
+            extra_attachments: [
+              ...pre.extra_attachments,
+              {
+                image: `data:${
+                  asset.mimeType ?? "image/png"
+                };base64,${asset.base64!}`,
+              },
+            ],
+          }));
+        }
+      }
+      //  else {
+      //   const preUploadedImage = await SheetManager.show(
+      //     "uploaded-images-sheet"
+      //   );
+      //   if (preUploadedImage)
+      //     setProductInfo((pre) => ({
+      //       ...pre,
+      //       image: preUploadedImage,
       //     }));
       // }
     } catch (e) {
@@ -261,6 +483,19 @@ const AddProductScreen = () => {
       <Stack.Screen
         options={{
           title: !params.isEditing ? "Add a Product" : "Update Product",
+          headerRight(props) {
+            return isLoading ? (
+              <ActivityIndicator color={colors.text} />
+            ) : (
+              <Pressable
+                onPress={
+                  params.isEditing ? handleUpdateProduct : handleSaveProduct
+                }
+              >
+                <Save color={colors.text} size={24} />
+              </Pressable>
+            );
+          },
         }}
       />
       <KeyboardAwareScrollView
@@ -268,7 +503,12 @@ const AddProductScreen = () => {
         bottomOffset={15}
         contentContainerStyle={[
           styles.container,
-          { backgroundColor: colors.background, gap: 15, marginTop: 30 },
+          {
+            backgroundColor: colors.background,
+            gap: 15,
+            marginTop: 30,
+            paddingBottom: inset.bottom,
+          },
         ]}
       >
         <VStack className="gap-[15px]  sm:w-[500px] sm:self-center">
@@ -278,61 +518,45 @@ const AddProductScreen = () => {
               data={selectImageMenuData}
               onValueSelect={onImageSelect}
             >
-              {productInfo?.product_image ? (
+              {productInfo?.image ? (
                 <Image
                   source={{
-                    uri: params?.isEditing
-                      ? productInfo.product_image
-                      : generateImageUrl(productInfo.product_image),
+                    uri: productInfo.image,
                   }}
-                  className={`mb-6 h-[300px] w-[300px] rounded-md`}
+                  className={`mb-6 h-[300px] w-[300px] rounded-sm`}
                   alt="image"
                   resizeMode="cover"
                   onError={(e) => console.log(e)}
-                  style={{ width: 300, aspectRatio: 1, marginBottom: 15 }}
+                  style={{
+                    width: 150,
+                    aspectRatio: 1,
+                    marginBottom: 15,
+                    borderRadius: 10,
+                  }}
                 />
               ) : (
                 <Box
-                  className={`mb-6 h-[300px] w-[300px] items-center justify-center rounded-lg`}
+                  className={`mb-6 h-[200px] w-[200px] items-center justify-center rounded-lg`}
                   style={{
-                    // width: 150,
-                    // height: 150,
                     backgroundColor: colors.card,
-                    // borderRadius: 10,
-                    // justifyContent: "center",
-                    // alignItems: "center",
-                    // alignSelf: "center",
                   }}
                 >
                   <Icon as={Camera} size={40} color={colors.text} />
                 </Box>
               )}
-
-              {/* {productInfo.product_image ? (
-                <CustomImage
-                  source={{ uri: productInfo.product_image }}
-                  width={150}
-                  height={150}
-                  style={{ alignSelf: "center" }}
-                  resizeMode={"contain"}
-                />
-              ) : (
-              )} */}
             </MenuItem>
           </Box>
 
-          <Box
-            className="gap-2.5 px-5" /* style={{ gap: 15, paddingHorizontal: 15 }} */
-          >
+          <Box className="gap-2.5 px-5">
             <CustomInput
               ref={getRef("product_name")}
               label={"Product Name"}
               placeholder="Product Name"
-              value={productInfo.product_name}
+              value={productInfo.name}
               returnKeyType="next"
               onSubmitEditing={() => inputRefs.current?.invoice?.focus()}
               onChangeText={(name) =>
-                setProductInfo((pre) => ({ ...pre, product_name: name }))
+                setProductInfo((pre) => ({ ...pre, name: name }))
               }
             />
 
@@ -342,7 +566,7 @@ const AddProductScreen = () => {
                 label={"Invoice"}
                 placeholder="Invoice"
                 keyboardType="numeric"
-                value={productInfo.product_invoice}
+                value={productInfo.invoice}
                 returnKeyType="next"
                 onSubmitEditing={() => {
                   inputRefs.current?.mrp?.focus();
@@ -350,7 +574,7 @@ const AddProductScreen = () => {
                 onChangeText={(price) =>
                   setProductInfo((pre) => ({
                     ...pre,
-                    product_invoice: price.replace(/[^\d.]/g, ""),
+                    invoice: price.replace(/[^\d.]/g, ""),
                   }))
                 }
                 containerStyle={{ flex: 1 }}
@@ -360,7 +584,7 @@ const AddProductScreen = () => {
                 label={"MRP"}
                 placeholder="MRP"
                 keyboardType="numeric"
-                value={productInfo.product_mrp}
+                value={productInfo.mrp}
                 returnKeyType="next"
                 onSubmitEditing={() => {
                   inputRefs.current?.extra_info?.focus();
@@ -368,7 +592,7 @@ const AddProductScreen = () => {
                 onChangeText={(price) => {
                   setProductInfo((pre) => ({
                     ...pre,
-                    product_mrp: price.replace(/[^\d.]/g, ""),
+                    mrp: price.replace(/[^\d.]/g, ""),
                   }));
                 }}
                 containerStyle={{ flex: 1 }}
@@ -389,22 +613,34 @@ const AddProductScreen = () => {
                     ios: "plus",
                   }),
                 },
-                ...categories.map((cat) => ({ title: cat.key, id: cat.key })),
+                ...categories.map((cat) => ({ title: cat.name, id: cat.id })),
               ]}
               onValueSelect={async (value) => {
                 if (value === "add") {
                   const val = await SheetManager.show("add-category-sheet");
-
                   if (val) {
-                    setProductInfo((pre) => ({
-                      ...pre,
-                      product_category: val,
-                    }));
-                    await addCategory(val);
+                    const { data, error } = await addCategory(val);
+                    console.log({ data });
+                    if (error) {
+                      Alert.alert("Error", error?.details);
+                    } else if (data) {
+                      setCategories((pre) => {
+                        const tmp = [...pre];
+                        tmp.push(data);
+                        return tmp;
+                      });
+                      setProductInfo((pre) => ({
+                        ...pre,
+                        category_id: data?.id,
+                      }));
+                    }
                   }
                   return;
                 }
-                setProductInfo((pre) => ({ ...pre, product_category: value }));
+                setProductInfo((pre) => ({
+                  ...pre,
+                  category_id: value,
+                }));
               }}
             >
               <CustomInput
@@ -412,9 +648,8 @@ const AddProductScreen = () => {
                 label={"Category"}
                 pointerEvents="none"
                 placeholder="Category"
-                value={productInfo.product_category}
-                onChangeText={(name) =>
-                  setProductInfo((pre) => ({ ...pre, product_name: name }))
+                value={
+                  categories.find((_) => _.id === productInfo.category_id)?.name
                 }
               />
             </MenuItem>
@@ -423,27 +658,54 @@ const AddProductScreen = () => {
               ref={getRef("extra_info")}
               label={"Extra Info"}
               placeholder="Extra Info"
-              value={productInfo.product_extra_info}
+              value={productInfo.extra_info}
               returnKeyType="done"
-              onSubmitEditing={() => handleSaveProduct()}
+              onSubmitEditing={() =>
+                params.isEditing ? handleUpdateProduct() : handleSaveProduct()
+              }
               onChangeText={(value) => {
                 setProductInfo((pre) => ({
                   ...pre,
-                  product_extra_info: value,
+                  extra_info: value,
                 }));
               }}
             />
 
-            <CustomButton
-              style={{ padding: 10, height: "auto" }}
-              className="p-[10px]"
-              loading={isLoading}
-              onPress={handleSaveProduct}
-            >
-              <ButtonText className="color-white capitalize">
-                {params?.isEditing ? "update" : "save"}
-              </ButtonText>
-            </CustomButton>
+            <Text>Extra Attachments</Text>
+
+            <Box className="flex-row flex-wrap w-full">
+              <Box className="p-1 w-1/4">
+                <MenuItem
+                  title="Select Image Source"
+                  data={selectImageMenuData}
+                  onValueSelect={onAttachmentSelect}
+                >
+                  <Box
+                    className="aspect-square rounded-xl justify-center items-center overflow-hidden"
+                    style={{ backgroundColor: colors.card }}
+                  >
+                    <Icon as={Camera} size={40} color={colors.text} />
+                  </Box>
+                </MenuItem>
+              </Box>
+              {extra_attachments?.map((item, index) => (
+                <Box key={index} className="p-1 w-1/4">
+                  <TouchableOpacity
+                    className="flex-1 them rounded-xl  overflow-hidden aspect-square justify-center items-center"
+                    onPress={() => onAttachmentImageDelete(item?.image)}
+                  >
+                    <Image
+                      source={{
+                        uri: item?.image,
+                      }}
+                      style={{ minWidth: 100, height: "100%" }}
+                      resizeMode="cover"
+                      alt="image"
+                    />
+                  </TouchableOpacity>
+                </Box>
+              ))}
+            </Box>
           </Box>
         </VStack>
 

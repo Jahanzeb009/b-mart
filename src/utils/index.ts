@@ -5,7 +5,7 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "PKR",
   minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
+  maximumFractionDigits: 2,
 });
 
 export const formatCurrency = (number: number) => {
@@ -20,7 +20,7 @@ const { width, height } = Dimensions.get("window");
 
 export function useDeviceType() {
   const [deviceType, setDeviceType] = useState<"mobile" | "tablet" | "web">(
-    getDeviceType()
+    getDeviceType(),
   );
 
   const [dimen, setDimen] = useState({ width, height });
@@ -39,7 +39,6 @@ export function useDeviceType() {
       setDeviceType(type);
 
       setDimen({ width, height });
-      // console.log(`Device type changed to: ${type}`);
     };
 
     const subscription = Dimensions.addEventListener("change", handler);
