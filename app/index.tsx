@@ -21,7 +21,7 @@ import Fuse from "fuse.js";
 import { RectButton } from "react-native-gesture-handler";
 import { FlashList, FlashListRef } from "@shopify/flash-list";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Trash2, Plus } from "lucide-react-native";
+import { Trash2, Plus, NotepadText, Brackets, X, Search } from "lucide-react-native";
 import { debounce } from "lodash";
 import { ChipsContainer } from "@/components/ChipsContainer";
 import { VStack } from "@/components/ui/vstack";
@@ -202,13 +202,42 @@ const Home = () => {
     [isEditingMode, categories, selectedIds.size],
   );
 
+  const onShowAllCategories = async () => {
+    Haptics.selectionAsync();
+
+    const val = await SheetManager.show(
+      "show-all-categories-sheet",
+      {
+        payload: {
+          categories,
+          selectedCategory,
+          onPress(index) {
+            flatRef.current?.scrollToIndex({
+              index,
+              animated: true,
+            });
+          },
+        },
+      },
+    );
+
+    if (val) setSelectedCategory(val);
+  }
+
+  const onSearch = () => {
+
+    Haptics.selectionAsync();
+    setShowSearch((pre) => !pre);
+    setQueryText("");
+  }
+
   return (
     <>
       <Stack.Screen
         options={{
           headerRight(props) {
             return (
-              <View style={{ flexDirection: "row", gap: 10, marginRight: 10 }}>
+              <View style={{ flexDirection: "row", gap: 10, paddingHorizontal: 5, }}>
                 {isLoading && <ActivityIndicator color={colors.text} />}
 
                 {isEditingMode && (
@@ -218,23 +247,11 @@ const Home = () => {
                     }}
                     onPress={() => {
                       Haptics.selectionAsync();
-
                       setIsEditingMode(false);
                       setSelectedIds(new Set());
                     }}
                   >
-                    <IconButton
-                      icon={"close"}
-                      size={24}
-                      iconColor={colors.text}
-                      mode="contained"
-                      style={{ margin: 0 }}
-                      theme={{
-                        colors: {
-                          surfaceVariant: colors.background,
-                        },
-                      }}
-                    />
+                    <X size={24} color={colors.text} />
                   </RectButton>
                 )}
 
@@ -246,60 +263,21 @@ const Home = () => {
                   onPress={async () => {
                     Haptics.selectionAsync();
 
-                    const val = await SheetManager.show(
-                      "show-all-categories-sheet",
-                      {
-                        payload: {
-                          categories,
-                          selectedCategory,
-                          onPress(index) {
-                            flatRef.current?.scrollToIndex({
-                              index,
-                              animated: true,
-                            });
-                          },
-                        },
-                      },
-                    );
+                    router.navigate('/(khata)')
 
-                    if (val) setSelectedCategory(val);
                   }}
                 >
-                  <IconButton
-                    icon={"format-list-group"}
-                    size={24}
-                    style={{ margin: 0 }}
-                    mode="contained"
-                    iconColor={colors.text}
-                    theme={{
-                      colors: {
-                        surfaceVariant: colors.background,
-                      },
-                    }}
-                  />
+                  <NotepadText size={24} color={colors.text} />
                 </RectButton>
-                <RectButton
-                  style={{
-                    borderRadius: 100,
-                  }}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setShowSearch((pre) => !pre);
-                    setQueryText("");
-                  }}
-                >
-                  <IconButton
-                    icon={!showSearch ? "magnify" : "close"}
-                    size={24}
-                    iconColor={colors.text}
-                    mode="contained"
-                    style={{ margin: 0 }}
-                    theme={{
-                      colors: {
-                        surfaceVariant: colors.background,
-                      },
-                    }}
-                  />
+                <RectButton onPress={onShowAllCategories} >
+                  <Brackets size={24} color={colors.text} />
+                </RectButton>
+                <RectButton onPress={onSearch}>
+                  {!showSearch ?
+                    <Search size={24} color={colors.text} />
+                    :
+                    <X size={24} color={colors.text} />
+                  }
                 </RectButton>
               </View>
             );

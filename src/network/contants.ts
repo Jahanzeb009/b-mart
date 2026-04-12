@@ -1,6 +1,7 @@
 export const TABLES = {
   products: "products",
   categories: "categories",
+  khata: "khata"
 };
 
 export const STORAGE = {

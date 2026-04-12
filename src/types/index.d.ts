@@ -39,9 +39,19 @@ interface ProductCategoryTypes {
   name: string;
 }
 
+interface KhataItemTypes {
+  id: string;
+  cust_name: string;
+  description: string
+  created_at: string;
+  is_completed: boolean;
+}
+
+
 export {
   ProductTypes,
   ProductCategoryTypes,
   ProductInsertTypes,
   ProductUpdateTypes,
+  KhataItemTypes
 };

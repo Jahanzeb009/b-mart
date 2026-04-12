@@ -75,6 +75,7 @@ function RootLayoutNav() {
                 />
                 <Stack.Screen name="addProduct" />
                 <Stack.Screen name="productDetails" />
+                <Stack.Screen name="(khata)" />
               </Stack>
             </SheetProvider>
           </ThemeProvider>

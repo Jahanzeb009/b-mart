@@ -1,4 +1,5 @@
 import {
+  KhataItemTypes,
   ProductCategoryTypes,
   ProductInsertTypes,
   ProductTypes,
@@ -177,6 +178,65 @@ const uploadProductImage = async ({
   } = supabase.storage.from(STORAGE.BUCKET.product_images).getPublicUrl(path);
 
   return publicUrl;
+};
+
+export const createKhata = async ({ is_completed = false, ...item }: {
+  cust_name: string;
+  description: string;
+  is_completed?: boolean;
+}) => {
+  const { data, error } = await supabase
+    .from(TABLES.khata)
+    .insert({
+      ...item,
+      is_completed
+    })
+    .select().single(); // Use .select() to return the inserted data
+
+  if (error) {
+    console.error("Error creating khata:", error.message);
+    return null;
+  }
+
+  // data will be an array of the inserted rows. We take the first one.
+  console.log("New khata created:", data);
+  return data;
+};
+
+export const updateKhata = async ({ id, ...item }: { id: string } & Partial<Omit<KhataItemTypes, "id" | "created_at">>) => {
+  const { data, error } = await supabase
+    .from(TABLES.khata)
+    .update(item)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating khata:", error.message);
+    return null;
+  }
+
+  // data will be an array of the inserted rows. We take the first one.
+  console.log("Khata updated:", data);
+  return data;
+};
+
+export const deleteKhata = async ({ id }: { id: string }) => {
+  const { data, error } = await supabase
+    .from(TABLES.khata)
+    .delete()
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error deleting khata:", error.message);
+    return null;
+  }
+
+  // data will be an array of the inserted rows. We take the first one.
+  console.log("Khata deleted:", data);
+  return data;
 };
 
 export {
