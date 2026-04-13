@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  View,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useRef, useState } from "react";
@@ -38,14 +39,6 @@ import { Text } from "@/components/ui/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Crypto from "expo-crypto";
 
-const isBase64String = (str: string) => {
-  return str.startsWith("data:image");
-};
-
-const removeBase64String = (str: string) => {
-  return str.replace(/^data:image\/[a-z]+;base64,/, "");
-};
-
 const AddProductScreen = () => {
   const { colors } = useTheme();
 
@@ -64,38 +57,7 @@ const AddProductScreen = () => {
     isEditing: boolean;
     selectedCategory?: { key: string; id: string };
   };
-
   const [showAlertDialog, setShowAlertDialog] = useState(false);
-
-  const selectImageMenuData = [
-    // {
-    //   title: "Choose Image",
-    //   id: "choose_image",
-    //   image: Platform.select({
-    //     ios: "photo.on.rectangle",
-    //     android: "ic_gallery",
-    //   }),
-    //   imageColor: colors.text,
-    // },
-    {
-      title: "Pick Photo",
-      id: "pick_photo",
-      image: Platform.select({
-        ios: "photo",
-        android: "ic_gallery",
-      }),
-      imageColor: colors.text,
-    },
-    {
-      title: "Take Photo",
-      id: "take_photo",
-      image: Platform.select({
-        android: "ic_camera",
-        ios: "camera",
-      }),
-      imageColor: colors.text,
-    },
-  ];
 
   const selectedCategory =
     typeof params?.selectedCategory === "string"
@@ -123,17 +85,16 @@ const AddProductScreen = () => {
     let _categories = await AsyncStorage.getItem("@categories");
     if (_categories) {
       _categories = JSON.parse(_categories);
-
+      console.log({ selectedCategory });
       // @ts-ignore
       setCategories(_categories);
     }
-
-    // setCategories([]);
   };
 
   useEffect(() => {
     getCategories();
 
+    // assign values to the inputs when editing.
     if (params?.isEditing) {
       setProductInfo({
         category_id: params.category_id,
@@ -149,10 +110,13 @@ const AddProductScreen = () => {
       });
 
       inputRefs.current?.product_name?.focus();
+    } else {
+      setProductInfo((pre) => ({
+        ...pre,
+        category_id: selectedCategory?.id ?? "",
+      }));
     }
   }, []);
-
-  const isHttpsUrl = (str: string) => /^https:\/\//i.test(str);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -478,22 +442,76 @@ const AddProductScreen = () => {
     }
   };
 
+  const MenuData = [
+    {
+      title: "add new",
+      id: "add",
+      imageColor: colors.primary,
+
+      image: Platform.select({
+        android: "ic_menu_add",
+        ios: "plus",
+      }),
+    },
+    ...categories.map((cat) => ({ title: cat.name, id: cat.id })),
+  ];
+
+  const onMenuSelect = async (value: string) => {
+    if (value === "add") {
+      const val = await SheetManager.show("add-category-sheet");
+      if (val) {
+        const { data, error } = await addCategory(val);
+        console.log({ data });
+        if (error) {
+          Alert.alert("Error", error?.details);
+        } else if (data) {
+          setCategories((pre) => {
+            const tmp = [...pre];
+            tmp.push(data);
+            return tmp;
+          });
+          setProductInfo((pre) => ({
+            ...pre,
+            category_id: data?.id,
+          }));
+        }
+      }
+      return;
+    }
+    setProductInfo((pre) => ({
+      ...pre,
+      category_id: value,
+    }));
+  };
+
+  const currentCategory = categories.find((_) => {
+    if (params?.isEditing || !!productInfo.category_id) {
+      return _.id === productInfo.category_id;
+    }
+
+    return _.id === selectedCategory.id;
+  })?.name;
+
   return (
     <>
       <Stack.Screen
         options={{
           title: !params.isEditing ? "Add a Product" : "Update Product",
           headerRight(props) {
-            return isLoading ? (
-              <ActivityIndicator color={colors.text} />
-            ) : (
-              <Pressable
-                onPress={
-                  params.isEditing ? handleUpdateProduct : handleSaveProduct
-                }
-              >
-                <Save color={colors.text} size={24} />
-              </Pressable>
+            return (
+              <View style={{paddingHorizontal: 5}}>
+                {isLoading ? (
+                  <ActivityIndicator color={colors.text} />
+                ) : (
+                  <Pressable
+                    onPress={
+                      params.isEditing ? handleUpdateProduct : handleSaveProduct
+                    }
+                  >
+                    <Save color={colors.text} size={24} />
+                  </Pressable>
+                )}
+              </View>
             );
           },
         }}
@@ -515,7 +533,7 @@ const AddProductScreen = () => {
           <Box className="self-center">
             <MenuItem
               title="Select Image Source"
-              data={selectImageMenuData}
+              data={selectImageMenuData(colors)}
               onValueSelect={onImageSelect}
             >
               {productInfo?.image ? (
@@ -566,6 +584,9 @@ const AddProductScreen = () => {
                 label={"Invoice"}
                 placeholder="Invoice"
                 keyboardType="numeric"
+                leftIcon={
+                  <Text style={{ color: colors.text + "70" }}>PKR</Text>
+                }
                 value={productInfo.invoice}
                 returnKeyType="next"
                 onSubmitEditing={() => {
@@ -583,6 +604,9 @@ const AddProductScreen = () => {
                 ref={getRef("mrp")}
                 label={"MRP"}
                 placeholder="MRP"
+                leftIcon={
+                  <Text style={{ color: colors.text + "70" }}>PKR</Text>
+                }
                 keyboardType="numeric"
                 value={productInfo.mrp}
                 returnKeyType="next"
@@ -602,55 +626,15 @@ const AddProductScreen = () => {
             <MenuItem
               ref={menuRef}
               title="Select Category"
-              data={[
-                {
-                  title: "add new",
-                  id: "add",
-                  imageColor: colors.primary,
-
-                  image: Platform.select({
-                    android: "ic_menu_add",
-                    ios: "plus",
-                  }),
-                },
-                ...categories.map((cat) => ({ title: cat.name, id: cat.id })),
-              ]}
-              onValueSelect={async (value) => {
-                if (value === "add") {
-                  const val = await SheetManager.show("add-category-sheet");
-                  if (val) {
-                    const { data, error } = await addCategory(val);
-                    console.log({ data });
-                    if (error) {
-                      Alert.alert("Error", error?.details);
-                    } else if (data) {
-                      setCategories((pre) => {
-                        const tmp = [...pre];
-                        tmp.push(data);
-                        return tmp;
-                      });
-                      setProductInfo((pre) => ({
-                        ...pre,
-                        category_id: data?.id,
-                      }));
-                    }
-                  }
-                  return;
-                }
-                setProductInfo((pre) => ({
-                  ...pre,
-                  category_id: value,
-                }));
-              }}
+              data={MenuData}
+              onValueSelect={onMenuSelect}
             >
               <CustomInput
                 editable={false}
                 label={"Category"}
                 pointerEvents="none"
                 placeholder="Category"
-                value={
-                  categories.find((_) => _.id === productInfo.category_id)?.name
-                }
+                value={currentCategory}
               />
             </MenuItem>
 
@@ -659,7 +643,10 @@ const AddProductScreen = () => {
               label={"Extra Info"}
               placeholder="Extra Info"
               value={productInfo.extra_info}
-              returnKeyType="done"
+              multiline
+              textAlignVertical="top"
+              containerStyle={{ minHeight: 150 }}
+              style={{ paddingTop: 10 }}
               onSubmitEditing={() =>
                 params.isEditing ? handleUpdateProduct() : handleSaveProduct()
               }
@@ -677,7 +664,7 @@ const AddProductScreen = () => {
               <Box className="p-1 w-1/4">
                 <MenuItem
                   title="Select Image Source"
-                  data={selectImageMenuData}
+                  data={selectImageMenuData(colors)}
                   onValueSelect={onAttachmentSelect}
                 >
                   <Box
@@ -742,3 +729,43 @@ const styles = StyleSheet.create({
     width: "80%",
   },
 });
+
+const isBase64String = (str: string) => {
+  return str.startsWith("data:image");
+};
+
+const removeBase64String = (str: string) => {
+  return str.replace(/^data:image\/[a-z]+;base64,/, "");
+};
+
+const selectImageMenuData = (colors: any) => [
+  // {
+  //   title: "Choose Image",
+  //   id: "choose_image",
+  //   image: Platform.select({
+  //     ios: "photo.on.rectangle",
+  //     android: "ic_gallery",
+  //   }),
+  //   imageColor: colors.text,
+  // },
+  {
+    title: "Pick Photo",
+    id: "pick_photo",
+    image: Platform.select({
+      ios: "photo",
+      android: "ic_gallery",
+    }),
+    imageColor: colors.text,
+  },
+  {
+    title: "Take Photo",
+    id: "take_photo",
+    image: Platform.select({
+      android: "ic_camera",
+      ios: "camera",
+    }),
+    imageColor: colors.text,
+  },
+];
+
+const isHttpsUrl = (str: string) => /^https:\/\//i.test(str);

@@ -3,10 +3,12 @@ import AddCategorySheet from "./addCategorySheet";
 import UploadedImagesSheet from "./uploadedImagesSheet";
 import ShowAllCategoriesSheet from "./showAllCategoriesSheet";
 import { ProductCategoryTypes } from "../types";
+import ImageViewSheet from "./imageViewSheet";
 
 registerSheet("add-category-sheet", AddCategorySheet);
 registerSheet("uploaded-images-sheet", UploadedImagesSheet);
 registerSheet("show-all-categories-sheet", ShowAllCategoriesSheet);
+registerSheet("image-view-sheet", ImageViewSheet);
 
 declare module "react-native-actions-sheet" {
   interface Sheets {
@@ -15,6 +17,11 @@ declare module "react-native-actions-sheet" {
     }>;
     "uploaded-images-sheet": SheetDefinition<{
       returnValue: string | null;
+    }>;
+    "image-view-sheet": SheetDefinition<{
+      payload: {
+        image: string;
+      };
     }>;
     "show-all-categories-sheet": SheetDefinition<{
       returnValue: ProductCategoryTypes | null;

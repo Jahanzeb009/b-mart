@@ -1,82 +1,63 @@
-import React, {
-  forwardRef,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from "react";
+import React, { forwardRef, JSX } from "react";
 import { useTheme } from "@react-navigation/native";
-import { Pressable, TextInput, View, ViewStyle } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  withTiming,
-} from "react-native-reanimated";
+import { TextInput, ViewStyle } from "react-native";
 import { Text } from "./ui/text";
+import { VStack } from "./ui/vstack";
+import { Input, InputField, InputSlot, UIInput } from "./ui/input";
 
 type CustomTextInputProps = {
-  label: string;
+  label?: string;
   containerStyle?: ViewStyle;
   pressableStyle?: ViewStyle;
+  leftIcon?: JSX.Element;
+  rightIcon?: JSX.Element;
 } & TextInput["props"];
 
-const CustomInput = forwardRef<TextInput, CustomTextInputProps>(
-  ({ label, containerStyle, pressableStyle, style, ...rest }, ref) => {
+const CustomInput = forwardRef<typeof UIInput.Input, CustomTextInputProps>(
+  (
+    {
+      label,
+      containerStyle,
+      // pressableStyle,
+      style,
+      leftIcon,
+      rightIcon,
+      ...rest
+    },
+    ref,
+  ) => {
     const { colors } = useTheme();
 
-    const [isFocused, setIsFocused] = useState(false);
-
-    const inputRef = useRef<TextInput>(null);
-
-    useImperativeHandle(ref, () => inputRef.current as TextInput);
-
-    const aniStyle = useAnimatedStyle(() => ({
-      borderColor: withTiming(isFocused ? colors.primary : colors.border),
-    }));
     return (
-      <Animated.View
-        style={[
-          {
-            backgroundColor: colors.card,
-            borderRadius: 10,
-            borderWidth: 1,
-          },
-          aniStyle,
-          containerStyle,
-        ]}
-      >
-        <Pressable
-          onPress={() => inputRef.current?.focus()}
-          style={[{ flex: 1, padding: 7, gap: 4 }, pressableStyle]}
+      <VStack className="gap-1.5" style={[containerStyle]}>
+        {!!label && (
+          <Text size="sm" bold style={{ color: colors.text }}>
+            {label}
+          </Text>
+        )}
+        <Input
+          variant="outline"
+          size="lg"
+          style={{ borderColor: colors.border, flex: 1 }}
         >
-          {label && (
-            <Text
-              style={{ color: isFocused ? colors.primary : colors.text + "90" }}
-              size="sm"
-            >
-              {label}
-            </Text>
+          {leftIcon && (
+            <InputSlot className="pl-3">
+              {/* <InputIcon as={User} className="text-typography-400" /> */}
+              {leftIcon}
+            </InputSlot>
           )}
-          <TextInput
-            ref={inputRef}
-            onFocus={() => {
-              setIsFocused(true);
-            }}
-            onBlur={() => {
-              setIsFocused(false);
-            }}
-            placeholderTextColor={"grey"}
-            style={[
-              {
-                color: colors.text,
-                outline: "transparent",
-              },
-              style,
-            ]}
+
+          <InputField
+            ref={ref}
+            style={[{ color: colors.text }, style]}
+            placeholderTextColor={colors.text + "50"}
             {...rest}
           />
-        </Pressable>
-      </Animated.View>
+          {rightIcon && <InputSlot className="pl-3">{rightIcon}</InputSlot>}
+        </Input>
+      </VStack>
     );
-  }
+  },
 );
 
 export default CustomInput;

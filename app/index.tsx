@@ -21,12 +21,21 @@ import Fuse from "fuse.js";
 import { RectButton } from "react-native-gesture-handler";
 import { FlashList, FlashListRef } from "@shopify/flash-list";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Trash2, Plus, NotepadText, Brackets, X, Search } from "lucide-react-native";
+import {
+  Trash2,
+  Plus,
+  NotepadText,
+  Brackets,
+  X,
+  Search,
+} from "lucide-react-native";
 import { debounce } from "lodash";
 import { ChipsContainer } from "@/components/ChipsContainer";
 import { VStack } from "@/components/ui/vstack";
 import { SkeletonView } from "@/components/SkeletonView";
 import { FabButton } from "@/components/FabButton";
+import { LinearGradient } from "expo-linear-gradient";
+import CustomInput from "@/components/CustomInput";
 
 const options = {
   keys: ["name", "invoice", "mrp", "category_id"],
@@ -205,31 +214,27 @@ const Home = () => {
   const onShowAllCategories = async () => {
     Haptics.selectionAsync();
 
-    const val = await SheetManager.show(
-      "show-all-categories-sheet",
-      {
-        payload: {
-          categories,
-          selectedCategory,
-          onPress(index) {
-            flatRef.current?.scrollToIndex({
-              index,
-              animated: true,
-            });
-          },
+    const val = await SheetManager.show("show-all-categories-sheet", {
+      payload: {
+        categories,
+        selectedCategory,
+        onPress(index) {
+          flatRef.current?.scrollToIndex({
+            index,
+            animated: true,
+          });
         },
       },
-    );
+    });
 
     if (val) setSelectedCategory(val);
-  }
+  };
 
   const onSearch = () => {
-
     Haptics.selectionAsync();
     setShowSearch((pre) => !pre);
     setQueryText("");
-  }
+  };
 
   return (
     <>
@@ -237,7 +242,9 @@ const Home = () => {
         options={{
           headerRight(props) {
             return (
-              <View style={{ flexDirection: "row", gap: 10, paddingHorizontal: 5, }}>
+              <View
+                style={{ flexDirection: "row", gap: 10, paddingHorizontal: 5 }}
+              >
                 {isLoading && <ActivityIndicator color={colors.text} />}
 
                 {isEditingMode && (
@@ -256,28 +263,26 @@ const Home = () => {
                 )}
 
                 <RectButton
-                  // activeOpacity={0}
                   style={{
                     borderRadius: 100,
                   }}
                   onPress={async () => {
                     Haptics.selectionAsync();
 
-                    router.navigate('/(khata)')
-
+                    router.navigate("/(khata)");
                   }}
                 >
                   <NotepadText size={24} color={colors.text} />
                 </RectButton>
-                <RectButton onPress={onShowAllCategories} >
+                <RectButton onPress={onShowAllCategories}>
                   <Brackets size={24} color={colors.text} />
                 </RectButton>
                 <RectButton onPress={onSearch}>
-                  {!showSearch ?
+                  {!showSearch ? (
                     <Search size={24} color={colors.text} />
-                    :
+                  ) : (
                     <X size={24} color={colors.text} />
-                  }
+                  )}
                 </RectButton>
               </View>
             );
@@ -308,27 +313,20 @@ const Home = () => {
           />
 
           {showSearch && (
-            // @ts-ignore
-            <Searchbar
+            <CustomInput
               placeholder="Search Product"
               onChangeText={handleSearchChange}
-              // value={queryText}
-              placeholderTextColor={"grey"}
               autoFocus
+              placeholderTextColor={"grey"}
               keyboardAppearance="default"
-              style={{
+              containerStyle={{
                 marginTop: 15,
+                paddingVertical: 10,
+                paddingLeft: 10,
                 marginHorizontal: 15,
                 backgroundColor: colors.background,
               }}
-              inputStyle={{
-                color: colors.text,
-              }}
-              onClearIconPress={() => {
-                setShowSearch(false);
-                setFilterData(productList);
-                setQueryText("");
-              }}
+              pressableStyle={{ flex: undefined }}
             />
           )}
         </View>
@@ -372,6 +370,18 @@ const Home = () => {
             </ScrollView>
           )}
         </View>
+
+        <LinearGradient
+          colors={["transparent", colors.background]}
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 300,
+          }}
+        />
 
         <FabButton icon={isEditingMode ? Trash2 : Plus} onPress={onPressFab} />
       </View>

@@ -15,6 +15,7 @@ import { Text } from "@/components/ui/text";
 import { Image } from "@/components/ui/image";
 import { Box } from "@/components/ui/box";
 import { SquarePen } from "lucide-react-native";
+import { SheetManager } from "react-native-actions-sheet";
 const ProductDetails = () => {
   const { colors } = useTheme();
 
@@ -42,29 +43,33 @@ const ProductDetails = () => {
       <Stack.Screen
         options={{
           title: product.name,
-          headerRight(props) {
+          headerRight: () => {
             return (
-              <Pressable
-                onPress={() => {
-                  router.navigate({
-                    pathname: "/addProduct",
-                    params: {
-                      // @ts-ignore
-                      isEditing: true,
-                      ...product,
-                      ...(product.extra_attachments
-                        ? {
-                            extra_attachments: JSON.stringify(
-                              product.extra_attachments,
-                            ),
-                          }
-                        : {}),
-                    },
-                  });
-                }}
+              <View
+                style={{ flexDirection: "row", gap: 10, paddingHorizontal: 5 }}
               >
-                <SquarePen color={colors.text} size={24} />
-              </Pressable>
+                <Pressable
+                  onPress={() => {
+                    router.navigate({
+                      pathname: "/addProduct",
+                      params: {
+                        // @ts-ignore
+                        isEditing: true,
+                        ...product,
+                        ...(product.extra_attachments
+                          ? {
+                              extra_attachments: JSON.stringify(
+                                product.extra_attachments,
+                              ),
+                            }
+                          : {}),
+                      },
+                    });
+                  }}
+                >
+                  <SquarePen color={colors.text} size={24} />
+                </Pressable>
+              </View>
             );
           },
         }}
@@ -180,11 +185,18 @@ const ProductDetails = () => {
 
           <Box className="flex-row flex-wrap w-full">
             {extra_attachments?.map((item, index) => (
-              <Box key={index} className="p-1 w-1/4">
-                <Box
-                  className="flex-1 them rounded-xl  overflow-hidden aspect-square justify-center items-center"
-                  // onPress={() => onAttachmentImageDelete(item?.image)}
-                >
+              <Pressable
+                onPress={() => {
+                  SheetManager.show("image-view-sheet", {
+                    payload: {
+                      image: item?.image,
+                    },
+                  });
+                }}
+                key={index}
+                className="w-1/4 p-1 "
+              >
+                <Box className="rounded-xl overflow-hidden aspect-square justify-center items-center">
                   <Image
                     source={{
                       uri: item?.image,
@@ -194,7 +206,7 @@ const ProductDetails = () => {
                     alt="image"
                   />
                 </Box>
-              </Box>
+              </Pressable>
             ))}
           </Box>
         </Box>
