@@ -13,7 +13,7 @@
     "preset": "jest-expo"
   },
   "dependencies": {
-    "@d11/react-native-fast-image": "^8.12.0",
+    "@d11/react-native-fast-image": "^8.13.0",
     "@expo/html-elements": "^0.10.1",
     "@expo/vector-icons": "^15.0.2",
     "@gluestack-ui/core": "^3.0.12",
@@ -64,7 +64,7 @@
     "react-native-reanimated": "~4.1.0",
     "react-native-safe-area-context": "^5.6.2",
     "react-native-screens": "~4.16.0",
-    "react-native-svg": "^15.14.0",
+    "react-native-svg": "^15.15.4",
     "react-native-text-ticker": "^1.15.0",
     "react-native-url-polyfill": "^3.0.0",
     "react-native-web": "^0.21.0",

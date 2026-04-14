@@ -57,7 +57,8 @@
           }
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "./plugins/withExcludeDuplicateDeps"
     ],
     "experiments": {
       "typedRoutes": true,
