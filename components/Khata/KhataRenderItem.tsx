@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -32,7 +32,7 @@ const KhataRenderItem = ({
   onDelete: () => void;
 }) => {
   const [showMoreText, setShowMoreText] = useState(false);
-  const [collapsedHeight, setCollapsedHeight] = useState(0);
+  const [collapsedHeight, setCollapsedHeight] = useState(60);
   const [expandedHeight, setExpandedHeight] = useState(0);
 
   const is_completed = item.is_completed;
@@ -61,6 +61,7 @@ const KhataRenderItem = ({
 
   const animatedPressableStyle = useAnimatedStyle(() => ({
     borderRadius: withTiming(isPressed.value ? 10 : 5, { duration: 150 }),
+    overflow: "hidden",
     transform: [
       {
         scale: withTiming(isPressed.value ? 0.99 : 1, { duration: 150 }),
@@ -75,12 +76,12 @@ const KhataRenderItem = ({
   };
 
   return (
-    <Animated.View style={[{ overflow: "hidden" }, animatedPressableStyle]}>
+    <Animated.View style={animatedPressableStyle}>
       <Pressable
-        style={[
+        style={StyleSheet.flatten([
           styles.card,
           { flex: 1, backgroundColor: colors.card, borderColor: colors.border },
-        ]}
+        ])}
         onPress={() => setShowMoreText((pre) => !pre)}
         onPressIn={() => (isPressed.value = true)}
         onPressOut={() => (isPressed.value = false)}
@@ -97,75 +98,59 @@ const KhataRenderItem = ({
               size="lg"
               bold
               // @ts-ignore
-              style={[{ color: colors.text }, completedStyle]}
+              style={StyleSheet.flatten([
+                { color: colors.text },
+                completedStyle,
+              ])}
             >
               {item.cust_name}
             </Text>
 
             {!!item.description && (
-              <Animated.View style={[{ flex: 1 }, animatedStyle]}>
-                {/* Measure collapsed height (2 lines) */}
-                <Text
-                  size="sm"
-                  numberOfLines={3}
-                  style={{
-                    color: colors.text + "99",
-                    position: "absolute",
-                    width: "100%",
-                    opacity: 0,
-                  }}
-                  onLayout={(e) => {
-                    const h = e.nativeEvent.layout.height;
-                    if (h > 0 && collapsedHeight === 0) {
-                      setCollapsedHeight(h);
-                      animatedHeight.value = h; // set initial
-                    }
-                  }}
-                >
-                  {item.description}
-                </Text>
-
+              <Animated.View
+                style={StyleSheet.flatten([{ flex: 1 }, animatedStyle])}
+              >
                 {/* Measure expanded height (all lines) */}
-                <Text
-                  size="sm"
+                <View
                   style={{
-                    color: colors.text + "99",
                     position: "absolute",
                     width: "100%",
                     opacity: 0,
                   }}
                   onLayout={(e) => {
                     const h = e.nativeEvent.layout.height;
-                    if (h > 0) setExpandedHeight(h);
+                    if (h > 0) setExpandedHeight(h + 20);
                   }}
                 >
-                  {item.description}
-                </Text>
+                  <Text
+                    size="sm"
+                    style={{
+                      color: colors.text + "99",
+                    }}
+                  >
+                    {item.description}
+                  </Text>
+                </View>
 
                 {/* Visible text — no numberOfLines, height controls clipping */}
-                <Text
-                  size="md"
-                  // @ts-ignore
-                  style={[{ color: colors.text + "99" }]}
-                >
+                <Text size="md" style={{ color: colors.text + "99" }}>
                   {item.description}
                 </Text>
               </Animated.View>
             )}
 
-            {/* @ts-ignore */}
-            <Text size="xs" style={[{ color: colors.text + "60" }]}>
+            <Text size="xs" style={{ color: colors.text + "60" }}>
               {created_at}
             </Text>
           </VStack>
           <VStack className="items-end gap-2">
             <View
-              style={[
+              style={StyleSheet.flatten([
                 styles.amountBadge,
                 {
                   backgroundColor: totalAmount >= 0 ? "#10b98120" : "#ef444420",
                 },
-              ]}
+              ])}
             >
               <Text
                 size="md"
@@ -207,15 +192,15 @@ const KhataRenderItem = ({
           <Box
             style={{
               backgroundColor: colors.border,
-              paddingVertical: 5,
+              paddingVertical: Platform.OS === "web" ? 10 : 5,
               justifyContent: "center",
               alignItems: "center",
             }}
           >
             {showMoreText ? (
-              <ChevronUp size={20} color={colors.text + "99"} />
+              <ChevronUp size={24} color={colors.text + "99"} />
             ) : (
-              <ChevronDown size={20} color={colors.text + "99"} />
+              <ChevronDown size={24} color={colors.text + "99"} />
             )}
           </Box>
         )}

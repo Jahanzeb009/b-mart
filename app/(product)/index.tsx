@@ -28,6 +28,7 @@ import {
   Brackets,
   X,
   Search,
+  Package,
 } from "lucide-react-native";
 import { debounce } from "lodash";
 import { ChipsContainer } from "@/components/ChipsContainer";
@@ -36,6 +37,10 @@ import { SkeletonView } from "@/components/SkeletonView";
 import { FabButton } from "@/components/FabButton";
 import { LinearGradient } from "expo-linear-gradient";
 import CustomInput from "@/components/CustomInput";
+import { Box } from "@/components/ui/box";
+import { Heading } from "@/components/ui/heading";
+import { Text } from "@/components/ui/text";
+import { formatCurrency } from "@/src/utils";
 
 const options = {
   keys: ["name", "invoice", "mrp", "category_id"],
@@ -50,7 +55,7 @@ const setupFuse = (data: ProductTypes[]) => {
 };
 
 const Home = () => {
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
 
   const inset = useSafeAreaInsets();
 
@@ -120,11 +125,18 @@ const Home = () => {
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
+  const debounceGetData = useCallback(
+    debounce(() => {
       setIsLoading(true);
       _getProducts();
       _getCategories();
+    }, 500),
+    [],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      debounceGetData();
     }, []),
   );
 
@@ -182,7 +194,7 @@ const Home = () => {
       }
     } else {
       router.navigate({
-        pathname: "/addProduct",
+        pathname: "/(product)/add",
         params: {
           selectedCategory:
             selectedCategory.name === "all"
@@ -210,6 +222,44 @@ const Home = () => {
     },
     [isEditingMode, categories, selectedIds.size],
   );
+
+  // Stats bar
+  const totalProducts = filterData.length;
+  const totalProfit = filterData.reduce(
+    (sum, p) => sum + (+p.mrp - +p.invoice),
+    0,
+  );
+
+  const renderEmptyState = () => (
+    <Box className="flex-1 items-center justify-center py-20 px-10">
+      <Box
+        className="rounded-full p-5 mb-4"
+        style={{ backgroundColor: colors.card }}
+      >
+        <Package color={colors.text + "40"} size={48} />
+      </Box>
+      <Heading size="lg" style={{ color: colors.text + "60" }} className="mb-2">
+        {queryText ? "No results" : "No products yet"}
+      </Heading>
+      <Text
+        className="text-center"
+        style={{ color: colors.text + "40" }}
+        size="sm"
+      >
+        {queryText
+          ? `Nothing found for "${queryText}"`
+          : "Tap + to add your first product"}
+      </Text>
+    </Box>
+  );
+
+  // const renderSkeleton = () => (
+  //   <VStack className="flex-wrap flex-row">
+  //     {Array.from({ length: 6 }).map((_, i) => (
+  //       <SkeletonView key={i} />
+  //     ))}
+  //   </VStack>
+  // );
 
   const onShowAllCategories = async () => {
     Haptics.selectionAsync();
@@ -243,7 +293,12 @@ const Home = () => {
           headerRight(props) {
             return (
               <View
-                style={{ flexDirection: "row", gap: 10, paddingHorizontal: 5 }}
+                style={{
+                  gap: 10,
+                  paddingHorizontal: 5,
+                  flexDirection: "row",
+                  paddingRight: Platform.OS === "web" ? 20 : 5,
+                }}
               >
                 {isLoading && <ActivityIndicator color={colors.text} />}
 
@@ -277,13 +332,11 @@ const Home = () => {
                 <RectButton onPress={onShowAllCategories}>
                   <Brackets size={24} color={colors.text} />
                 </RectButton>
-                <RectButton onPress={onSearch}>
-                  {!showSearch ? (
+                {!showSearch && (
+                  <RectButton onPress={onSearch}>
                     <Search size={24} color={colors.text} />
-                  ) : (
-                    <X size={24} color={colors.text} />
-                  )}
-                </RectButton>
+                  </RectButton>
+                )}
               </View>
             );
           },
@@ -314,6 +367,14 @@ const Home = () => {
 
           {showSearch && (
             <CustomInput
+              rightIcon={
+                <X
+                  size={24}
+                  color={colors.text}
+                  style={{ marginRight: 10 }}
+                  onPress={onSearch}
+                />
+              }
               placeholder="Search Product"
               onChangeText={handleSearchChange}
               autoFocus
@@ -321,28 +382,60 @@ const Home = () => {
               keyboardAppearance="default"
               containerStyle={{
                 marginTop: 15,
-                paddingVertical: 10,
-                paddingLeft: 10,
                 marginHorizontal: 15,
                 backgroundColor: colors.background,
               }}
               pressableStyle={{ flex: undefined }}
             />
           )}
+
+          {/* Stats strip */}
+          {!isLoading && totalProducts > 0 && (
+            <Box
+              className="flex-row justify-between px-4 pb-2 pt-2"
+              style={{ borderTopWidth: 0 }}
+            >
+              <Text className="text-xs" style={{ color: colors.text + "60" }}>
+                {totalProducts} product{totalProducts !== 1 ? "s" : ""}
+                {selectedCategory.name !== "all"
+                  ? ` in ${selectedCategory.name}`
+                  : ""}
+              </Text>
+              {totalProfit > 0 && (
+                <Text
+                  className="text-xs font-medium"
+                  style={{ color: "#22c55e" }}
+                >
+                  Total margin: {formatCurrency(totalProfit)}
+                </Text>
+              )}
+            </Box>
+          )}
+
+          {/* Selection count bar */}
+          {isEditingMode && selectedIds.size > 0 && (
+            <Box
+              className="px-4 py-2"
+              style={{
+                backgroundColor: dark
+                  ? colors.primary + "20"
+                  : colors.primary + "10",
+              }}
+            >
+              <Text
+                className="text-xs font-medium"
+                style={{ color: colors.primary }}
+              >
+                {selectedIds.size} selected
+              </Text>
+            </Box>
+          )}
         </View>
 
         <View style={{ flex: 1 }}>
-          {isLoading && Platform.OS === "web" && (
-            <ScrollView style={StyleSheet.absoluteFillObject}>
-              <VStack className="flex-wrap flex-row">
-                {Array.from({ length: 9 }).map((_, i) => {
-                  return <SkeletonView key={i} />;
-                })}
-              </VStack>
-            </ScrollView>
-          )}
-
-          {Platform.OS !== "web" ? (
+          {filterData.length === 0 ? (
+            renderEmptyState()
+          ) : Platform.OS !== "web" ? (
             <FlashList
               // @ts-ignore
               ref={ListRef}
@@ -352,7 +445,7 @@ const Home = () => {
               renderItem={({ index, item }) => renderProduct(item, index)}
               keyExtractor={(item) => item.id.toString()}
               scrollEventThrottle={16}
-              decelerationRate={"fast"}
+              decelerationRate="fast"
               keyboardShouldPersistTaps="handled"
               automaticallyAdjustKeyboardInsets
               optimizeItemArrangement
@@ -362,7 +455,7 @@ const Home = () => {
             <ScrollView
               ref={ScrollViewRef}
               scrollEventThrottle={16}
-              decelerationRate={"fast"}
+              decelerationRate="fast"
             >
               <VStack className="flex-wrap flex-row">
                 {filterData.map(renderProduct)}
@@ -371,17 +464,19 @@ const Home = () => {
           )}
         </View>
 
-        <LinearGradient
-          colors={["transparent", colors.background]}
-          pointerEvents="none"
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: 300,
-          }}
-        />
+        {Platform.OS !== "web" && (
+          <LinearGradient
+            colors={["transparent", colors.background]}
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 250,
+            }}
+          />
+        )}
 
         <FabButton icon={isEditingMode ? Trash2 : Plus} onPress={onPressFab} />
       </View>

@@ -51,7 +51,7 @@ const AddProductScreen = () => {
 
   const menuRef = useRef<MenuComponentRef>(null);
   const fileNameRef = useRef(`images/products/${Date.now()}.jpg`);
-  const storageRef = ref(storage, fileNameRef.current);
+  // const storageRef = ref(storage, fileNameRef.current);
 
   const params = useLocalSearchParams() as unknown as ProductTypes & {
     isEditing: boolean;
@@ -417,6 +417,7 @@ const AddProductScreen = () => {
           setProductInfo((pre) => ({
             ...pre,
             extra_attachments: [
+              // @ts-ignore
               ...pre.extra_attachments,
               {
                 image: `data:${
@@ -460,6 +461,7 @@ const AddProductScreen = () => {
     if (value === "add") {
       const val = await SheetManager.show("add-category-sheet");
       if (val) {
+        // @ts-ignore
         const { data, error } = await addCategory(val);
         console.log({ data });
         if (error) {
@@ -499,7 +501,12 @@ const AddProductScreen = () => {
           title: !params.isEditing ? "Add a Product" : "Update Product",
           headerRight(props) {
             return (
-              <View style={{paddingHorizontal: 5}}>
+              <View
+                style={{
+                  paddingHorizontal: 5,
+                  marginRight: Platform.OS === "web" ? 20 : 5,
+                }}
+              >
                 {isLoading ? (
                   <ActivityIndicator color={colors.text} />
                 ) : (
@@ -519,7 +526,7 @@ const AddProductScreen = () => {
       <KeyboardAwareScrollView
         keyboardShouldPersistTaps="handled"
         bottomOffset={15}
-        contentContainerStyle={[
+        contentContainerStyle={StyleSheet.flatten([
           styles.container,
           {
             backgroundColor: colors.background,
@@ -527,7 +534,7 @@ const AddProductScreen = () => {
             marginTop: 30,
             paddingBottom: inset.bottom,
           },
-        ]}
+        ])}
       >
         <VStack className="gap-[15px]  sm:w-[500px] sm:self-center">
           <Box className="self-center">
@@ -559,6 +566,7 @@ const AddProductScreen = () => {
                     backgroundColor: colors.card,
                   }}
                 >
+                  {/* @ts-ignore */}
                   <Icon as={Camera} size={40} color={colors.text} />
                 </Box>
               )}
@@ -567,6 +575,7 @@ const AddProductScreen = () => {
 
           <Box className="gap-2.5 px-5">
             <CustomInput
+              // @ts-ignore
               ref={getRef("product_name")}
               label={"Product Name"}
               placeholder="Product Name"
@@ -580,6 +589,7 @@ const AddProductScreen = () => {
 
             <Box className="flex-row gap-2.5">
               <CustomInput
+                // @ts-ignore
                 ref={getRef("invoice")}
                 label={"Invoice"}
                 placeholder="Invoice"
@@ -601,6 +611,7 @@ const AddProductScreen = () => {
                 containerStyle={{ flex: 1 }}
               />
               <CustomInput
+                // @ts-ignore
                 ref={getRef("mrp")}
                 label={"MRP"}
                 placeholder="MRP"
@@ -639,6 +650,7 @@ const AddProductScreen = () => {
             </MenuItem>
 
             <CustomInput
+              // @ts-ignore
               ref={getRef("extra_info")}
               label={"Extra Info"}
               placeholder="Extra Info"
@@ -671,6 +683,7 @@ const AddProductScreen = () => {
                     className="aspect-square rounded-xl justify-center items-center overflow-hidden"
                     style={{ backgroundColor: colors.card }}
                   >
+                    {/* @ts-ignore */}
                     <Icon as={Camera} size={40} color={colors.text} />
                   </Box>
                 </MenuItem>

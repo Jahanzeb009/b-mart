@@ -1,6 +1,6 @@
 import React, { forwardRef, JSX } from "react";
 import { useTheme } from "@react-navigation/native";
-import { TextInput, ViewStyle } from "react-native";
+import { StyleSheet, TextInput, ViewStyle } from "react-native";
 import { Text } from "./ui/text";
 import { VStack } from "./ui/vstack";
 import { Input, InputField, InputSlot, UIInput } from "./ui/input";
@@ -29,7 +29,7 @@ const CustomInput = forwardRef<typeof UIInput.Input, CustomTextInputProps>(
     const { colors } = useTheme();
 
     return (
-      <VStack className="gap-1.5" style={[containerStyle]}>
+      <VStack className="gap-1.5" style={containerStyle}>
         {!!label && (
           <Text size="sm" bold style={{ color: colors.text }}>
             {label}
@@ -38,18 +38,17 @@ const CustomInput = forwardRef<typeof UIInput.Input, CustomTextInputProps>(
         <Input
           variant="outline"
           size="lg"
-          style={{ borderColor: colors.border, flex: 1 }}
+          style={{ borderColor: colors.border }}
         >
-          {leftIcon && (
-            <InputSlot className="pl-3">
-              {/* <InputIcon as={User} className="text-typography-400" /> */}
-              {leftIcon}
-            </InputSlot>
-          )}
+          {leftIcon && <InputSlot className="pl-3">{leftIcon}</InputSlot>}
 
           <InputField
             ref={ref}
-            style={[{ color: colors.text }, style]}
+            style={StyleSheet.flatten([
+              { color: colors.text, outline: "none" },
+              style,
+            ])}
+            selectionColor={colors.primary}
             placeholderTextColor={colors.text + "50"}
             {...rest}
           />

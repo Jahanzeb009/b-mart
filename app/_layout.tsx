@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import "react-native-reanimated";
 import "@/src/sheets";
 import { SheetProvider } from "react-native-actions-sheet";
-import { useColorScheme } from "react-native";
+import { Platform, useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
@@ -25,7 +25,7 @@ export {
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: "index",
+  initialRouteName: "(product)/index",
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -49,7 +49,7 @@ function RootLayoutNav() {
       (_event, session) => {
         if (!mounted) return;
         console.log("session", !!session);
-      }
+      },
     );
 
     return () => {
@@ -58,24 +58,39 @@ function RootLayoutNav() {
     };
   }, []);
 
+  const isDark = colorScheme === "dark";
+
   return (
     <GluestackUIProvider mode={"system"}>
       <KeyboardProvider>
         <GestureHandlerRootView style={{ flex: 1, backgroundColor: "black" }}>
-          <ThemeProvider value={colorScheme === "dark" ? Dark : Light}>
+          <ThemeProvider value={isDark ? Dark : Light}>
             <SheetProvider>
-              <Stack>
+              <Stack
+                screenOptions={{
+                  ...(Platform.OS === "android"
+                    ? { statusBarStyle: isDark ? "light" : "dark" }
+                    : {}),
+                  headerBackTitle: "Back",
+                }}
+              >
                 <Stack.Screen
-                  name="index"
+                  name="(product)/index"
                   options={{
                     title: "B Mart",
                     headerShadowVisible: false,
                     headerTitleAlign: "center",
                   }}
                 />
-                <Stack.Screen name="addProduct" />
-                <Stack.Screen name="productDetails" />
-                <Stack.Screen name="(khata)" />
+                <Stack.Screen name="(product)/add" />
+                <Stack.Screen
+                  name="(product)/details"
+                  options={{
+                    headerTransparent: Platform.OS === "ios",
+                    title: "Product Details",
+                  }}
+                />
+                <Stack.Screen name="(khata)/index" />
               </Stack>
             </SheetProvider>
           </ThemeProvider>

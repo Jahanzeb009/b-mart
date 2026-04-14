@@ -9,6 +9,7 @@ import Animated, {
 import { Button } from "./ui/button";
 import { IButtonProps } from "@gluestack-ui/core/lib/esm/button/creator/types";
 import { Spinner } from "./ui/spinner";
+import { StyleSheet } from "react-native";
 
 const CustomButton = ({
   onPress,
@@ -31,11 +32,14 @@ const CustomButton = ({
   });
 
   return (
-    <Animated.View layout={LinearTransition} style={[{}, aniStyle]}>
+    <Animated.View layout={LinearTransition} style={aniStyle}>
       <Button
         onPressIn={() => setIsPressed(true)}
         onPressOut={() => setIsPressed(false)}
-        style={[{ borderRadius: 5, backgroundColor: colors.primary }, style]}
+        style={StyleSheet.flatten([
+          { borderRadius: 5, backgroundColor: colors.primary },
+          style,
+        ])}
         onPress={(e) => {
           selectionAsync();
           onPress?.(e);

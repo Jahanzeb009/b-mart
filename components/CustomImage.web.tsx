@@ -27,14 +27,14 @@ const CustomImage = ({
   const { colors } = useTheme();
 
   const MAX_IMAGE_SIZE = 150;
-  const IMAGE_WIDTH = width ? Math.min(MAX_IMAGE_SIZE, +width) : MAX_IMAGE_SIZE;
+  const IMAGE_WIDTH = width ? Math.max(MAX_IMAGE_SIZE, +width) : MAX_IMAGE_SIZE;
   const IMAGE_HEIGHT = height
-    ? Math.min(MAX_IMAGE_SIZE, +height)
+    ? Math.max(MAX_IMAGE_SIZE, +height)
     : MAX_IMAGE_SIZE;
 
   return (
     <View
-      style={[
+      style={StyleSheet.flatten([
         {
           width: IMAGE_WIDTH,
           height: IMAGE_HEIGHT,
@@ -43,14 +43,18 @@ const CustomImage = ({
           backgroundColor: colors.card,
         },
         style,
-      ]}
+      ])}
     >
       <Image
         source={source}
         onLoadStart={() => setIsLoadingImage(true)}
         onLoadEnd={() => setIsLoadingImage(false)}
-        style={[{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT }, imageStyle]}
+        style={StyleSheet.flatten([
+          { width: IMAGE_WIDTH, height: IMAGE_HEIGHT },
+          imageStyle,
+        ])}
         contentFit={resizeMode}
+        alt="image-view"
       />
       {isLoadingImage && (
         <ActivityIndicator style={StyleSheet.absoluteFillObject} />

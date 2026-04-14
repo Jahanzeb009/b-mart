@@ -6,7 +6,7 @@ import React, {
   forwardRef,
 } from 'react';
 import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
-import { View, Dimensions, Platform, ViewProps } from 'react-native';
+import { View, Dimensions, Platform, ViewProps, StyleSheet } from 'react-native';
 import { gridStyle, gridItemStyle } from './styles';
 import { cssInterop } from 'nativewind';
 import {
@@ -263,7 +263,7 @@ const GridItem = forwardRef<React.ComponentRef<typeof View>, IGridItemProps>(
           class: className,
         })}
         {...props}
-        style={[
+        style={StyleSheet.flatten([
           {
             width:
               typeof flexBasisValue === 'number' ? flexBasisValue : undefined,
@@ -273,7 +273,7 @@ const GridItem = forwardRef<React.ComponentRef<typeof View>, IGridItemProps>(
             flexGrow: 0,
           },
           props.style,
-        ]}
+        ])}
       />
     );
   }

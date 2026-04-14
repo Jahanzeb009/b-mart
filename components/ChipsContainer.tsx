@@ -1,9 +1,12 @@
 import { ProductCategoryTypes } from "@/src/types";
 import { useTheme } from "@react-navigation/native";
-import { forwardRef } from "react";
+import { forwardRef, useMemo } from "react";
 import { FlatList } from "react-native";
 import { RectButton } from "react-native-gesture-handler";
-import { Chip } from "react-native-paper";
+import { Text } from "./ui/text";
+import { Box } from "./ui/box";
+
+const ALL_CATEGORY: ProductCategoryTypes = { id: "", name: "all" };
 
 export const ChipsContainer = forwardRef<
   FlatList,
@@ -11,54 +14,60 @@ export const ChipsContainer = forwardRef<
     categories: ProductCategoryTypes[];
     onPress: (item: ProductCategoryTypes) => void;
     selectedCategory: ProductCategoryTypes;
+    productCounts?: Record<string, number>;
   }
->(({ categories, onPress, selectedCategory }, ref) => {
-  const { colors } = useTheme();
+>(({ categories, onPress, selectedCategory, productCounts }, ref) => {
+  const { dark, colors } = useTheme();
 
-  categories = categories.sort((a, b) => {
-    if (a.name === "all") return -1;
-    if (b.name === "all") return 1;
-    return 0;
-  });
+  const sortedCategories = useMemo(() => {
+    const filtered = categories.filter((c) => c.name !== "all");
+    return [ALL_CATEGORY, ...filtered];
+  }, [categories]);
+
   return (
     <FlatList
       horizontal
       ref={ref}
-      data={categories}
+      data={sortedCategories}
       showsHorizontalScrollIndicator={false}
-      keyExtractor={(item) => item.id}
+      keyExtractor={(item) => item.id || "all"}
       contentContainerStyle={{
-        gap: 10,
+        gap: 8,
         paddingHorizontal: 15,
-        // paddingTop: headerHeight + 15,
+        paddingVertical: 4,
       }}
-      renderItem={({ item, index }) => {
-        const isSelected = selectedCategory.id
-          ? selectedCategory?.id === item.id
-          : selectedCategory?.name === item.name;
+      renderItem={({ item }) => {
+        const isSelected =
+          item.name === "all"
+            ? !selectedCategory.id && selectedCategory.name === "all"
+            : selectedCategory?.id === item.id;
+
         return (
           <RectButton
-            style={{
-              borderRadius: 100,
-            }}
+            style={{ borderRadius: 100 }}
             onPress={() => onPress(item)}
           >
-            <Chip
-              textStyle={{ textTransform: "capitalize" }}
+            <Box
+              className="rounded-full px-4 py-2"
               style={{
+                backgroundColor: isSelected
+                  ? colors.primary
+                  : dark
+                    ? "#2c2c2e"
+                    : "#e5e5ea",
                 borderWidth: 1,
-                borderColor: isSelected ? colors.primary : colors.border,
-              }}
-              theme={{
-                roundness: 5,
-                colors: {
-                  secondaryContainer: isSelected ? colors.primary : colors.card,
-                  onSecondaryContainer: isSelected ? "white" : colors.text,
-                },
+                borderColor: isSelected ? colors.primary : "transparent",
               }}
             >
-              {item.name}
-            </Chip>
+              <Text
+                className="text-sm font-medium capitalize"
+                style={{
+                  color: isSelected ? "#fff" : colors.text,
+                }}
+              >
+                {item.name}
+              </Text>
+            </Box>
           </RectButton>
         );
       }}

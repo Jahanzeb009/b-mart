@@ -1,5 +1,5 @@
 import "react-native-url-polyfill/auto";
-import "expo-sqlite/localStorage/install";
+// import "expo-sqlite/localStorage/install";
 import { createClient } from "@supabase/supabase-js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppState, Platform } from "react-native";

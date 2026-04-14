@@ -49,7 +49,7 @@ const Image = React.forwardRef<
         onLoadStart={() => setIsLoadingImage(true)}
         onLoadEnd={() => setIsLoadingImage(false)}
         // @ts-expect-error : web only
-        style={[
+        style={StyleSheet.flatten([
           ...(Platform.OS === "web"
             ? [
                 {
@@ -60,11 +60,14 @@ const Image = React.forwardRef<
             : [{}]),
 
           style,
-        ]}
+        ])}
       />
       {isLoadingImage && (
         <ActivityIndicator
-          style={[StyleSheet.absoluteFillObject, { backgroundColor: "#0009" }]}
+          style={StyleSheet.flatten([
+            StyleSheet.absoluteFillObject,
+            { backgroundColor: "#0009" },
+          ])}
         />
       )}
     </Box>
