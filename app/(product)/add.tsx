@@ -205,7 +205,9 @@ const AddProductScreen = () => {
       }
 
       router.dismissTo("/");
-    } finally {
+      setIsLoading(false);
+    } catch(e){
+      console.log('handleUpdateProduct error -> ', e)
       setIsLoading(false);
     }
   };

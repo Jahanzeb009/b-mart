@@ -50,9 +50,9 @@ const KhataList = () => {
       });
 
       setKhataList(sortedData ?? []);
+      setIsLoading(false);
     } catch (e) {
       console.error("fetchKhataList error:", e);
-    } finally {
       setIsLoading(false);
     }
   };

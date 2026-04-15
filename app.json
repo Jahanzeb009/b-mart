@@ -58,7 +58,8 @@
         }
       ],
       "expo-sqlite",
-      "./plugins/withExcludeDuplicateDeps"
+      "expo-build-properties",
+      "./src/plugins/withExcludeDuplicateDeps"
     ],
     "experiments": {
       "typedRoutes": true,

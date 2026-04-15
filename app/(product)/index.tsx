@@ -127,9 +127,9 @@ const Home = () => {
 
         return hasChanges ? merged : prev;
       });
+      setIsLoading(false);
     } catch (e) {
       console.log("_getProducts error ", e);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -142,9 +142,9 @@ const Home = () => {
         AsyncStorage.setItem("@categories", JSON.stringify(cats));
         return cats;
       });
+      setIsLoading(false);
     } catch (e) {
       console.log("_getCategories error ", e);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -230,9 +230,9 @@ const Home = () => {
           needsRefresh.current = true;
           await _getProducts();
         }
+        setIsLoading(false);
       } catch (error) {
         console.log("error deleting product", error);
-      } finally {
         setIsLoading(false);
       }
     } else {
@@ -249,10 +249,7 @@ const Home = () => {
     }
   };
 
-  const onLongPress = useCallback(
-    () => setIsEditingMode((pre) => !pre),
-    [],
-  );
+  const onLongPress = useCallback(() => setIsEditingMode((pre) => !pre), []);
 
   const renderProduct = useCallback(
     ({ item, index }: { item: ProductTypes; index: number }) => {
