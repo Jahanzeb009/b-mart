@@ -8,14 +8,14 @@ import {
 import React from "react";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useTheme } from "@react-navigation/native";
-import { ProductCategoryTypes, ProductTypes } from "@/src/types";
-import { formatCurrency } from "@/src/utils";
-import { Text } from "@/components/ui/text";
-import { Image } from "@/components/ui/image";
-import { Box } from "@/components/ui/box";
-import { Heading } from "@/components/ui/heading";
-import { HStack } from "@/components/ui/hstack";
-import { VStack } from "@/components/ui/vstack";
+import { ProductCategoryTypes, ProductTypes } from "@types";
+import { formatCurrency } from "@utils";
+import { Text } from "@components/ui/text";
+import { Image } from "@components/ui/image";
+import { Box } from "@components/ui/box";
+import { Heading } from "@components/ui/heading";
+import { HStack } from "@components/ui/hstack";
+import { VStack } from "@components/ui/vstack";
 import { SquarePen, TrendingUp } from "lucide-react-native";
 import { SheetManager } from "react-native-actions-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -95,7 +95,7 @@ const ProductDetails = () => {
           paddingBottom: inset.bottom + 15,
         }}
       >
-        <Box className="sm:self-center sm:w-[500px] bg-red-500">
+        <Box className="sm:self-center sm:w-[500px]">
           {/* Hero image */}
           <Image
             source={

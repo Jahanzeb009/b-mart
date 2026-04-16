@@ -1,4 +1,4 @@
-import { ProductCategoryTypes } from "@/src/types";
+import { ProductCategoryTypes } from "@types";
 import { useTheme } from "@react-navigation/native";
 import { forwardRef, useMemo } from "react";
 import { FlatList } from "react-native";

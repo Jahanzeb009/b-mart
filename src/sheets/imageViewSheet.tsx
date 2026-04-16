@@ -1,4 +1,4 @@
-import CustomImage from "@/components/CustomImage";
+import CustomImage from "@components/CustomImage";
 import { useTheme } from "@react-navigation/native";
 import { useState } from "react";
 import { Platform, useWindowDimensions, View } from "react-native";

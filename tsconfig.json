@@ -3,12 +3,20 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": [
-        "./*"
-      ],
-      "tailwind.config": [
-        "./tailwind.config.js"
-      ]
+      "@/*": ["./*"],
+      "@src/*": ["./src/*"],
+      "@components/*": ["./src/components/*"],
+      "@helper": ["./src/helper/index"],
+      "@helper/*": ["./src/helper/*"],
+      "@network": ["./src/network/index"],
+      "@network/*": ["./src/network/*"],
+      "@sheets": ["./src/sheets/index"],
+      "@sheets/*": ["./src/sheets/*"],
+      "@types": ["./src/types/index"],
+      "@types/*": ["./src/types/*"],
+      "@utils": ["./src/utils/index"],
+      "@utils/*": ["./src/utils/*"],
+      "tailwind.config": ["./tailwind.config.js"]
     }
   },
   "include": [

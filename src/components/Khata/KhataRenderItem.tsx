@@ -13,12 +13,12 @@ import {
   CircleCheckBig,
 } from "lucide-react-native";
 import { Text } from "../ui/text";
-import { formatCurrency } from "@/src/utils";
-import { KhataItemTypes } from "@/src/types";
-import { deleteKhata, updateKhata } from "@/src/network";
+import { formatCurrency } from "@utils";
+import { KhataItemTypes } from "@types";
+import { deleteKhata, updateKhata } from "@network";
 import { useEffect, useState } from "react";
 import { useTheme } from "@react-navigation/native";
-import { calculateTotal } from "@/src/helper";
+import { calculateTotal } from "@helper";
 import { impactAsync, ImpactFeedbackStyle } from "expo-haptics";
 import { Box } from "../ui/box";
 
@@ -55,6 +55,7 @@ const KhataRenderItem = ({
   }, [showMoreText, collapsedHeight, expandedHeight]);
 
   const animatedStyle = useAnimatedStyle(() => ({
+    flex: 1,
     height: animatedHeight.value + 15, // added 15 to show last line
     overflow: "hidden",
   }));
@@ -95,6 +96,7 @@ const KhataRenderItem = ({
         <HStack className="flex-1 p-3 justify-between items-start">
           <VStack className="flex-1 gap-1">
             <Text
+              selectable={false}
               size="lg"
               bold
               // @ts-ignore
@@ -107,9 +109,7 @@ const KhataRenderItem = ({
             </Text>
 
             {!!item.description && (
-              <Animated.View
-                style={StyleSheet.flatten([{ flex: 1 }, animatedStyle])}
-              >
+              <Animated.View style={animatedStyle}>
                 {/* Measure expanded height (all lines) */}
                 <View
                   style={{
@@ -123,6 +123,7 @@ const KhataRenderItem = ({
                   }}
                 >
                   <Text
+                    selectable={false}
                     size="sm"
                     style={{
                       color: colors.text + "99",
@@ -133,13 +134,21 @@ const KhataRenderItem = ({
                 </View>
 
                 {/* Visible text — no numberOfLines, height controls clipping */}
-                <Text size="md" style={{ color: colors.text + "99" }}>
+                <Text
+                  selectable={false}
+                  size="md"
+                  style={{ color: colors.text + "99" }}
+                >
                   {item.description}
                 </Text>
               </Animated.View>
             )}
 
-            <Text size="xs" style={{ color: colors.text + "60" }}>
+            <Text
+              selectable={false}
+              size="xs"
+              style={{ color: colors.text + "60" }}
+            >
               {created_at}
             </Text>
           </VStack>
@@ -153,6 +162,7 @@ const KhataRenderItem = ({
               ])}
             >
               <Text
+                selectable={false}
                 size="md"
                 bold
                 style={{ color: totalAmount >= 0 ? "#10b981" : "#ef4444" }}

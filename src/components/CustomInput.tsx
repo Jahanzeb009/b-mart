@@ -1,6 +1,12 @@
 import React, { forwardRef, JSX } from "react";
 import { useTheme } from "@react-navigation/native";
-import { StyleSheet, TextInput, ViewStyle } from "react-native";
+import {
+  StyleProp,
+  StyleSheet,
+  TextInput,
+  TextStyle,
+  ViewStyle,
+} from "react-native";
 import { Text } from "./ui/text";
 import { VStack } from "./ui/vstack";
 import { Input, InputField, InputSlot, UIInput } from "./ui/input";
@@ -8,9 +14,10 @@ import { Input, InputField, InputSlot, UIInput } from "./ui/input";
 type CustomTextInputProps = {
   label?: string;
   containerStyle?: ViewStyle;
-  pressableStyle?: ViewStyle;
   leftIcon?: JSX.Element;
   rightIcon?: JSX.Element;
+  inputStyle?: StyleProp<ViewStyle>;
+  inputFieldStyle?: StyleProp<TextStyle>;
 } & TextInput["props"];
 
 const CustomInput = forwardRef<typeof UIInput.Input, CustomTextInputProps>(
@@ -18,8 +25,8 @@ const CustomInput = forwardRef<typeof UIInput.Input, CustomTextInputProps>(
     {
       label,
       containerStyle,
-      // pressableStyle,
-      style,
+      inputStyle,
+      inputFieldStyle,
       leftIcon,
       rightIcon,
       ...rest
@@ -38,18 +45,21 @@ const CustomInput = forwardRef<typeof UIInput.Input, CustomTextInputProps>(
         <Input
           variant="outline"
           size="lg"
-          style={{ borderColor: colors.border }}
+          style={StyleSheet.flatten([
+            { borderColor: colors.border },
+            inputStyle,
+          ])}
         >
           {leftIcon && <InputSlot className="pl-3">{leftIcon}</InputSlot>}
 
           <InputField
             ref={ref}
+            className="placeholder:text-gray-400 dark:placeholder:text-gray-600"
             style={StyleSheet.flatten([
               { color: colors.text, outline: "none" },
-              style,
+              inputFieldStyle,
             ])}
             selectionColor={colors.primary}
-            placeholderTextColor={colors.text + "50"}
             {...rest}
           />
           {rightIcon && <InputSlot className="pl-3">{rightIcon}</InputSlot>}

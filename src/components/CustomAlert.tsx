@@ -5,10 +5,10 @@ import {
   AlertDialogFooter,
   AlertDialogBody,
   AlertDialogBackdrop,
-} from "@/components/ui/alert-dialog";
-import { Button, ButtonText } from "@/components/ui/button";
-import { Text } from "@/components/ui/text";
-import { Heading } from "@/components/ui/heading";
+} from "@components/ui/alert-dialog";
+import { Button, ButtonText } from "@components/ui/button";
+import { Text } from "@components/ui/text";
+import { Heading } from "@components/ui/heading";
 import React from "react";
 import { IButtonProps } from "@gluestack-ui/core/lib/esm/button/creator/types";
 

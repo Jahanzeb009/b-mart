@@ -6,19 +6,19 @@ import {
   AlertDialogContent,
   AlertDialogFooter,
   AlertDialogHeader,
-} from "@/components/ui/alert-dialog";
-import { Button, ButtonText } from "@/components/ui/button";
-import { Input, InputField, InputIcon, InputSlot } from "@/components/ui/input";
-import { Heading } from "@/components/ui/heading";
+} from "@components/ui/alert-dialog";
+import { Button, ButtonText } from "@components/ui/button";
+import { Input, InputField, InputIcon, InputSlot } from "@components/ui/input";
+import { Heading } from "@components/ui/heading";
 import { useTheme } from "@react-navigation/native";
 import { VStack } from "../ui/vstack";
-import { Text } from "@/components/ui/text";
-import { HStack } from "@/components/ui/hstack";
+import { Text } from "@components/ui/text";
+import { HStack } from "@components/ui/hstack";
 import { Banknote, FileText, User, X } from "lucide-react-native";
 import { ActivityIndicator } from "react-native";
 import { useEffect, useRef, useState } from "react";
-import { createKhata } from "@/src/network";
-import { calculateTotal } from "@/src/helper";
+import { createKhata } from "@network";
+import { calculateTotal } from "@helper";
 import { TextInput } from "react-native";
 
 const AddKhataModal = ({
@@ -136,7 +136,7 @@ const AddKhataModal = ({
                 style={{ borderColor: colors.border }}
               >
                 <InputSlot className="pl-3">
-                  <InputIcon as={User} className="text-typography-400" />
+                  <InputIcon as={User} color={colors.text} />
                 </InputSlot>
 
                 <InputField
@@ -145,7 +145,6 @@ const AddKhataModal = ({
                   value={userInput.cust_name}
                   onChangeText={handleUserInput("cust_name")}
                   style={{ color: colors.text }}
-                  placeholderTextColor={colors.text + "50"}
                   returnKeyType="next"
                   onSubmitEditing={() => {
                     inputRefs.current?.description?.focus();
@@ -167,12 +166,11 @@ const AddKhataModal = ({
                 style={{ borderColor: colors.border }}
               >
                 <InputSlot className="pl-3">
-                  <InputIcon as={Banknote} className="text-typography-400" />
+                  <InputIcon as={Banknote} color={colors.text} />
                 </InputSlot>
                 <InputField
                   value={userInput.totalAmount}
                   style={{ color: colors.text }}
-                  placeholderTextColor={colors.text + "50"}
                 />
               </Input>
             </VStack>
@@ -191,7 +189,7 @@ const AddKhataModal = ({
                   className="pl-3"
                   style={{ alignSelf: "flex-start", paddingTop: 12 }}
                 >
-                  <InputIcon as={FileText} className="text-typography-400" />
+                  <InputIcon as={FileText} color={colors.text} />
                 </InputSlot>
                 <InputField
                   ref={getRef("description")}
@@ -206,7 +204,6 @@ const AddKhataModal = ({
                   multiline
                   textAlignVertical="top"
                   style={{ color: colors.text, paddingTop: 10 }}
-                  placeholderTextColor={colors.text + "50"}
                 />
               </Input>
             </VStack>

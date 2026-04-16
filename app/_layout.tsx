@@ -7,16 +7,17 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import "react-native-reanimated";
-import "@/src/sheets";
+import "@sheets";
 import { SheetProvider } from "react-native-actions-sheet";
-import { Platform, useColorScheme } from "react-native";
+import { Platform, StatusBar, useColorScheme, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
-import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
+import { GluestackUIProvider } from "@components/ui/gluestack-ui-provider";
 import "@/global.css";
 import { Session } from "@supabase/supabase-js";
-import { supabase } from "@/src/network/supabase";
+import { supabase } from "@src/network/supabase";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -60,43 +61,64 @@ function RootLayoutNav() {
 
   const isDark = colorScheme === "dark";
 
+  const statusBarHeight = StatusBar.currentHeight;
+
   return (
-    <GluestackUIProvider mode={"system"}>
-      <KeyboardProvider>
-        <GestureHandlerRootView style={{ flex: 1, backgroundColor: "black" }}>
-          <ThemeProvider value={isDark ? Dark : Light}>
-            <SheetProvider>
-              <Stack
-                screenOptions={{
-                  ...(Platform.OS === "android"
-                    ? { statusBarStyle: isDark ? "light" : "dark" }
-                    : {}),
-                  headerBackTitle: "Back",
-                }}
-              >
-                <Stack.Screen
-                  name="(product)/index"
-                  options={{
-                    title: "B Mart",
-                    headerShadowVisible: false,
-                    headerTitleAlign: "center",
+    <SafeAreaProvider style={{ flex: 1, backgroundColor: "black" }}>
+      <GluestackUIProvider mode={"system"}>
+        <KeyboardProvider>
+          <GestureHandlerRootView style={{ flex: 1, backgroundColor: "black" }}>
+            <ThemeProvider value={isDark ? Dark : Light}>
+              <SheetProvider>
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: isDark
+                      ? Dark.colors.background
+                      : Light.colors.background,
+                    paddingTop: statusBarHeight,
                   }}
-                />
-                <Stack.Screen name="(product)/add" />
-                <Stack.Screen
-                  name="(product)/details"
-                  options={{
-                    headerTransparent: Platform.OS === "ios",
-                    title: "Product Details",
-                  }}
-                />
-                <Stack.Screen name="(khata)/index" />
-              </Stack>
-            </SheetProvider>
-          </ThemeProvider>
-        </GestureHandlerRootView>
-      </KeyboardProvider>
-    </GluestackUIProvider>
+                >
+                  <Stack
+                    // screenLayout={({children})=><View style={{flex:1, backgroundColor:'pink', marginTop: 30}}>{children}</View>}
+                    screenOptions={{
+                      ...(Platform.OS === "android"
+                        ? {
+                            statusBarStyle: isDark ? "light" : "dark",
+                          }
+                        : {}),
+                      headerBackTitle: "Back",
+                    }}
+                  >
+                    <Stack.Screen
+                      name="(product)/index"
+                      options={{
+                        title: "B Mart",
+                        // statusBarTranslucent: true,
+                        // headerTransparent:false,
+                        // headerShadowVisible: false,
+                        // headerBlurEffect: "systemMaterial",
+
+                        headerTitleAlign: "center",
+                      }}
+                    />
+                    <Stack.Screen name="(product)/add" />
+                    <Stack.Screen
+                      name="(product)/details"
+                      options={{
+                        headerTransparent: Platform.OS === "ios",
+                        title: "Product Details",
+                      }}
+                    />
+                    <Stack.Screen name="(khata)/index" />
+                  </Stack>
+                </View>
+              </SheetProvider>
+            </ThemeProvider>
+          </GestureHandlerRootView>
+        </KeyboardProvider>
+      </GluestackUIProvider>
+    </SafeAreaProvider>
   );
 }
 

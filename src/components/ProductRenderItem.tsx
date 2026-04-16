@@ -1,5 +1,5 @@
-import { ProductCategoryTypes, ProductTypes } from "@/src/types";
-import { formatCurrency } from "@/src/utils";
+import { ProductCategoryTypes, ProductTypes } from "@types";
+import { formatCurrency } from "@utils";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@react-navigation/native";
 import { router } from "expo-router";
@@ -79,7 +79,7 @@ export const ProductRenderItem = memo(
                 source={
                   item.image
                     ? { uri: item.image } //getOptimizedImageUrl(item.image, 10) }
-                    : require("../assets/images/icon_grey.png")
+                    : require("../../assets/images/icon_grey.png")
                 }
                 className="w-full"
                 alt="image"

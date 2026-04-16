@@ -11,31 +11,29 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useRef, useState } from "react";
 import { useTheme } from "@react-navigation/native";
-import { ref } from "firebase/storage";
 import {
   addCategory,
   saveProduct,
   updateProduct,
   uploadProductImage,
-} from "@/src/network";
-import { ProductCategoryTypes, ProductTypes } from "@/src/types";
-import { storage } from "@/src/network/firebase";
+} from "@network";
+import { ProductCategoryTypes, ProductTypes } from "@types";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { selectionAsync } from "expo-haptics";
 import { MenuComponentRef } from "@react-native-menu/menu";
 import { SheetManager } from "react-native-actions-sheet";
-import CustomInput from "@/components/CustomInput";
+import CustomInput from "@components/CustomInput";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
-import MenuItem from "@/components/CustomMenu";
-import CustomAlert from "@/components/CustomAlert";
-import { ButtonText } from "@/components/ui/button";
-import { VStack } from "@/components/ui/vstack";
-import { Image } from "@/components/ui/image";
-import { Box } from "@/components/ui/box";
-import { Icon } from "@/components/ui/icon";
+import MenuItem from "@components/CustomMenu";
+import CustomAlert from "@components/CustomAlert";
+import { ButtonText } from "@components/ui/button";
+import { VStack } from "@components/ui/vstack";
+import { Image } from "@components/ui/image";
+import { Box } from "@components/ui/box";
+import { Icon } from "@components/ui/icon";
 import { Camera, Save } from "lucide-react-native";
-import { Text } from "@/components/ui/text";
+import { Text } from "@components/ui/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Crypto from "expo-crypto";
 
@@ -206,8 +204,8 @@ const AddProductScreen = () => {
 
       router.dismissTo("/");
       setIsLoading(false);
-    } catch(e){
-      console.log('handleUpdateProduct error -> ', e)
+    } catch (e) {
+      console.log("handleUpdateProduct error -> ", e);
       setIsLoading(false);
     }
   };
@@ -593,7 +591,7 @@ const AddProductScreen = () => {
               <CustomInput
                 // @ts-ignore
                 ref={getRef("invoice")}
-                label={"Invoice"}
+                label={"Invoicse"}
                 placeholder="Invoice"
                 keyboardType="numeric"
                 leftIcon={
@@ -660,7 +658,7 @@ const AddProductScreen = () => {
               multiline
               textAlignVertical="top"
               containerStyle={{ minHeight: 150 }}
-              style={{ paddingTop: 10 }}
+              inputStyle={{ paddingTop: 10, flex: 1 }}
               onSubmitEditing={() =>
                 params.isEditing ? handleUpdateProduct() : handleSaveProduct()
               }

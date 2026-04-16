@@ -6,8 +6,8 @@ import ActionSheet, {
 import { useTheme } from "@react-navigation/native";
 import { Chip } from "react-native-paper";
 import { selectionAsync } from "expo-haptics";
-import { Text } from "@/components/ui/text";
-import { Box } from "@/components/ui/box";
+import { Text } from "@components/ui/text";
+import { Box } from "@components/ui/box";
 
 const ShowAllCategoriesSheet = (
   props: SheetProps<"show-all-categories-sheet">

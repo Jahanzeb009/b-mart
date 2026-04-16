@@ -12,7 +12,7 @@ import ActionSheet, {
   SheetProps,
 } from "react-native-actions-sheet";
 import { useTheme } from "@react-navigation/native";
-import CustomImage from "@/components/CustomImage";
+import CustomImage from "@components/CustomImage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { HelperText, IconButton } from "react-native-paper";
 
@@ -36,7 +36,7 @@ const UploadedImagesSheet = (props: SheetProps<"uploaded-images-sheet">) => {
   const [images, setImages] = useState<{
     last_updated_at: number;
     data: string[];
-  }>([]);
+  }>({});
   const [isLoading, setIsLoading] = useState(true);
 
   const getFreshImages = async () => {

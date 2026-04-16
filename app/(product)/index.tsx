@@ -16,10 +16,10 @@ import React, {
 import { useTheme } from "@react-navigation/native";
 import { router, Stack, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { deleteProducts, getCategories, getProductList } from "@/src/network";
-import { ProductRenderItem } from "@/components/ProductRenderItem";
+import { deleteProducts, getCategories, getProductList } from "@network";
+import { ProductRenderItem } from "@components/ProductRenderItem";
 import * as Haptics from "expo-haptics";
-import { ProductCategoryTypes, ProductTypes } from "@/src/types";
+import { ProductCategoryTypes, ProductTypes } from "@types";
 import { SheetManager } from "react-native-actions-sheet";
 import Fuse from "fuse.js";
 import { RectButton } from "react-native-gesture-handler";
@@ -35,15 +35,15 @@ import {
   Package,
 } from "lucide-react-native";
 import { debounce } from "lodash";
-import { ChipsContainer } from "@/components/ChipsContainer";
-import { VStack } from "@/components/ui/vstack";
-import { FabButton } from "@/components/FabButton";
+import { ChipsContainer } from "@components/ChipsContainer";
+import { VStack } from "@components/ui/vstack";
+import { FabButton } from "@components/FabButton";
 import { LinearGradient } from "expo-linear-gradient";
-import CustomInput from "@/components/CustomInput";
-import { Box } from "@/components/ui/box";
-import { Heading } from "@/components/ui/heading";
-import { Text } from "@/components/ui/text";
-import { formatCurrency } from "@/src/utils";
+import CustomInput from "@components/CustomInput";
+import { Box } from "@components/ui/box";
+import { Heading } from "@components/ui/heading";
+import { Text } from "@components/ui/text";
+import { formatCurrency } from "@utils";
 
 const options = {
   keys: ["name", "invoice", "mrp", "category_id"],
@@ -298,14 +298,6 @@ const Home = () => {
     </Box>
   );
 
-  // const renderSkeleton = () => (
-  //   <VStack className="flex-wrap flex-row">
-  //     {Array.from({ length: 6 }).map((_, i) => (
-  //       <SkeletonView key={i} />
-  //     ))}
-  //   </VStack>
-  // );
-
   const onShowAllCategories = async () => {
     Haptics.selectionAsync();
 
@@ -413,14 +405,12 @@ const Home = () => {
               placeholder="Search Product"
               onChangeText={handleSearchChange}
               autoFocus
-              placeholderTextColor={"grey"}
               keyboardAppearance="default"
               containerStyle={{
                 marginTop: 15,
                 marginHorizontal: 15,
                 backgroundColor: colors.background,
               }}
-              pressableStyle={{ flex: undefined }}
             />
           )}
 
@@ -515,9 +505,17 @@ const Home = () => {
             }}
           />
         )}
-
-        <FabButton icon={isEditingMode ? Trash2 : Plus} onPress={onPressFab} />
       </View>
+      {Platform.OS !== "ios" && (
+        <FabButton icon={isEditingMode ? Trash2 : Plus} onPress={onPressFab} />
+      )}
+      <Stack.Toolbar placement="bottom">
+        <Stack.Toolbar.Spacer />
+        <Stack.Toolbar.Button
+          icon={isEditingMode ? "trash" : "plus"}
+          onPress={onPressFab}
+        />
+      </Stack.Toolbar>
     </>
   );
 };

@@ -8,7 +8,6 @@
     "owner": "b-mart",
     "scheme": "bmart",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -24,11 +23,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "android.permission.RECORD_AUDIO"
-      ],
+      "permissions": ["android.permission.RECORD_AUDIO"],
       "package": "com.bmart.product.list"
     },
     "web": {
@@ -51,7 +47,7 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#b13728",
           "dark": {
             "backgroundColor": "#000000"
           }
@@ -59,7 +55,9 @@
       ],
       "expo-sqlite",
       "expo-build-properties",
-      "./src/plugins/withExcludeDuplicateDeps"
+      "./src/plugins/withExcludeDuplicateDeps",
+      "./src/plugins/withFmtFix",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,

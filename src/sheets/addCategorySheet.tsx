@@ -4,11 +4,11 @@ import ActionSheet, {
   SheetManager,
   SheetProps,
 } from "react-native-actions-sheet";
-import CustomInput from "@/components/CustomInput";
+import CustomInput from "@components/CustomInput";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import CustomButton from "@/components/CustomButton";
+import CustomButton from "@components/CustomButton";
 import { useTheme } from "@react-navigation/native";
-import { ButtonText } from "@/components/ui/button";
+import { ButtonText } from "@components/ui/button";
 
 const AddCategorySheet = (props: SheetProps<"add-category-sheet">) => {
   const [categoryName, setCategoryName] = useState("");
@@ -53,7 +53,6 @@ const AddCategorySheet = (props: SheetProps<"add-category-sheet">) => {
           placeholder="Enter category name"
           value={categoryName}
           autoFocus
-          pressableStyle={{ flex: undefined }}
           onChangeText={(value) => setCategoryName(value.toLowerCase())}
           returnKeyType="done"
           onSubmitEditing={() => {

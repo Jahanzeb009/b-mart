@@ -1,16 +1,14 @@
-import { TABLES } from "@/src/network/contants";
-import { supabase } from "@/src/network/supabase";
+import { TABLES } from "@network/contants";
+import { supabase } from "@network/supabase";
 import React, { useCallback, useEffect, useState } from "react";
 import { View, StyleSheet, ActivityIndicator, Pressable } from "react-native";
 import { Stack, useFocusEffect } from "expo-router";
 import { useTheme } from "@react-navigation/native";
 import { NotepadText, Plus } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-
-import { Heading } from "@/components/ui/heading";
-import { Text } from "@/components/ui/text";
-import { AddKhataModal, KhataRenderItem } from "@/components/Khata";
-import { KhataItemTypes } from "@/src/types";
+import { Text } from "@components/ui/text";
+import { AddKhataModal, KhataRenderItem } from "@components/Khata";
+import { KhataItemTypes } from "@types";
 import Animated, { LinearTransition } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
