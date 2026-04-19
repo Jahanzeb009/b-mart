@@ -7,6 +7,7 @@ import Animated, {
 import { HStack } from "../ui/hstack";
 import { VStack } from "../ui/vstack";
 import {
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
   Circle,
@@ -15,7 +16,7 @@ import {
 import { Text } from "../ui/text";
 import { formatCurrency } from "@utils";
 import { KhataItemTypes } from "@types";
-import { deleteKhata, updateKhata } from "@network";
+import { updateKhata } from "@network";
 import { useEffect, useState } from "react";
 import { useTheme } from "@react-navigation/native";
 import { calculateTotal } from "@helper";
@@ -24,14 +25,21 @@ import { Box } from "../ui/box";
 
 const KhataRenderItem = ({
   item,
+  editMode,
+  isSelected,
+  onSelect,
+  onLongPress,
   onRefresh,
-  onDelete,
 }: {
   item: KhataItemTypes;
+  editMode: boolean;
+  isSelected: boolean;
+  onSelect: () => void;
+  onLongPress: () => void;
   onRefresh: (is_completed?: boolean) => void;
-  onDelete: () => void;
 }) => {
   const [showMoreText, setShowMoreText] = useState(false);
+
   const [collapsedHeight, setCollapsedHeight] = useState(60);
   const [expandedHeight, setExpandedHeight] = useState(0);
 
@@ -81,19 +89,38 @@ const KhataRenderItem = ({
       <Pressable
         style={StyleSheet.flatten([
           styles.card,
-          { flex: 1, backgroundColor: colors.card, borderColor: colors.border },
+          {
+            flex: 1,
+            backgroundColor: isSelected ? colors.primary + "15" : colors.card,
+            borderColor: isSelected ? colors.primary : colors.border,
+          },
         ])}
-        onPress={() => setShowMoreText((pre) => !pre)}
+        onPress={() => {
+          if (editMode) {
+            onSelect();
+          } else {
+            setShowMoreText((pre) => !pre);
+          }
+        }}
         onPressIn={() => (isPressed.value = true)}
         onPressOut={() => (isPressed.value = false)}
-        delayLongPress={800}
+        delayLongPress={500}
         onLongPress={() => {
-          impactAsync(ImpactFeedbackStyle.Medium);
-          deleteKhata({ id: item.id });
-          onDelete();
+          if (!editMode) {
+            onLongPress();
+          }
         }}
       >
         <HStack className="flex-1 p-3 justify-between items-start">
+          {editMode && (
+            <View style={{ justifyContent: "center", marginRight: 10 }}>
+              {isSelected ? (
+                <CheckCircle2 size={22} color={colors.primary} />
+              ) : (
+                <Circle size={22} color={colors.text + "50"} />
+              )}
+            </View>
+          )}
           <VStack className="flex-1 gap-1">
             <Text
               selectable={false}

@@ -5,6 +5,8 @@ import {
   ActivityIndicator,
   Platform,
   ScrollView,
+  Pressable,
+  Alert,
 } from "react-native";
 import React, {
   useCallback,
@@ -33,6 +35,7 @@ import {
   X,
   Search,
   Package,
+  CheckCheck,
 } from "lucide-react-native";
 import { debounce } from "lodash";
 import { ChipsContainer } from "@components/ChipsContainer";
@@ -249,8 +252,56 @@ const Home = () => {
     }
   };
 
-  const onLongPress = useCallback(() => setIsEditingMode((pre) => !pre), []);
+  const onLongPress = useCallback((item: ProductTypes) => {
+    setIsEditingMode((pre) => !pre);
+    setSelectedIds(new Set([item.id]))
+  }, []);
 
+  const handleCancelEditMode = useCallback(() => {
+    setIsEditingMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    if (selectedIds.size === filterData.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filterData.map((item) => item.id)));
+    }
+  }, [filterData, selectedIds.size]);
+
+  const handleDeleteSelected = useCallback(() => {
+    if (selectedIds.size === 0) return;
+    Alert.alert(
+      "Delete Products",
+      `Are you sure you want to delete ${selectedIds.size} ${selectedIds.size === 1 ? "product" : "products"}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setIsLoading(true);
+              const isDone = await deleteProducts(selectedIds);
+              if (isDone) {
+                setIsEditingMode(false);
+                setSelectedIds(new Set());
+                needsRefresh.current = true;
+                await _getProducts();
+              }
+              setIsLoading(false);
+            } catch (error) {
+              console.log("error deleting product", error);
+              setIsLoading(false);
+            }
+          },
+        },
+      ],
+    );
+  }, [selectedIds]);
+
+  
   const renderProduct = useCallback(
     ({ item, index }: { item: ProductTypes; index: number }) => {
       return (
@@ -327,6 +378,7 @@ const Home = () => {
     <View
       style={{
         paddingVertical: 10,
+        backgroundColor: colors.card,
       }}
     >
       <ChipsContainer
@@ -381,25 +433,6 @@ const Home = () => {
           )}
         </Box>
       )}
-
-      {/* Selection count bar */}
-      {isEditingMode && selectedIds.size > 0 && (
-        <Box
-          className="px-4 py-2"
-          style={{
-            backgroundColor: dark
-              ? colors.primary + "20"
-              : colors.primary + "10",
-          }}
-        >
-          <Text
-            className="text-xs font-medium"
-            style={{ color: colors.primary }}
-          >
-            {selectedIds.size} selected
-          </Text>
-        </Box>
-      )}
     </View>
   );
 
@@ -407,8 +440,52 @@ const Home = () => {
     <>
       <Stack.Screen
         options={{
-          headerRight(props) {
-            return (
+          title: isEditingMode ? `${selectedIds.size} Selected` : "B Mart",
+          headerTitleAlign: "center",
+          headerLeft: isEditingMode
+            ? () => (
+                <Pressable
+                  onPress={handleCancelEditMode}
+                  style={{ padding: 5 }}
+                >
+                  <X size={22} color={colors.text} strokeWidth={2.5} />
+                </Pressable>
+              )
+            : undefined,
+          headerRight: () =>
+            isEditingMode ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingHorizontal: 5,
+                  gap: 10,
+                }}
+              >
+                {isLoading && <ActivityIndicator color={colors.text} />}
+                <Pressable onPress={handleSelectAll} style={{ padding: 5 }}>
+                  <CheckCheck
+                    size={22}
+                    color={
+                      selectedIds.size === filterData.length
+                        ? colors.primary
+                        : colors.text
+                    }
+                    strokeWidth={2.5}
+                  />
+                </Pressable>
+                <Pressable
+                  onPress={handleDeleteSelected}
+                  style={{
+                    padding: 5,
+                    opacity: selectedIds.size === 0 ? 0.4 : 1,
+                  }}
+                  disabled={selectedIds.size === 0}
+                >
+                  <Trash2 size={22} color="#ef4444" strokeWidth={2.5} />
+                </Pressable>
+              </View>
+            ) : (
               <View
                 style={{
                   gap: 10,
@@ -418,29 +495,10 @@ const Home = () => {
                 }}
               >
                 {isLoading && <ActivityIndicator color={colors.text} />}
-
-                {isEditingMode && (
-                  <RectButton
-                    style={{
-                      borderRadius: 100,
-                    }}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setIsEditingMode(false);
-                      setSelectedIds(new Set());
-                    }}
-                  >
-                    <X size={24} color={colors.text} />
-                  </RectButton>
-                )}
-
                 <RectButton
-                  style={{
-                    borderRadius: 100,
-                  }}
+                  style={{ borderRadius: 100 }}
                   onPress={async () => {
                     Haptics.selectionAsync();
-
                     router.navigate("/(khata)");
                   }}
                 >
@@ -455,8 +513,7 @@ const Home = () => {
                   </RectButton>
                 )}
               </View>
-            );
-          },
+            ),
         }}
       />
       <View style={{ flex: 1 }}>
@@ -482,6 +539,7 @@ const Home = () => {
               optimizeItemArrangement
               contentContainerStyle={{
                 paddingBottom: 150,
+                paddingTop: 10,
               }}
             />
           ) : (
@@ -513,16 +571,15 @@ const Home = () => {
           />
         )}
       </View>
-      {Platform.OS !== "ios" && (
-        <FabButton icon={isEditingMode ? Trash2 : Plus} onPress={onPressFab} />
+      {Platform.OS !== "ios" && !isEditingMode && (
+        <FabButton icon={Plus} onPress={onPressFab} />
       )}
-      <Stack.Toolbar placement="bottom">
-        <Stack.Toolbar.Spacer />
-        <Stack.Toolbar.Button
-          icon={isEditingMode ? "trash" : "plus"}
-          onPress={onPressFab}
-        />
-      </Stack.Toolbar>
+      {!isEditingMode && (
+        <Stack.Toolbar placement="bottom">
+          <Stack.Toolbar.Spacer />
+          <Stack.Toolbar.Button icon="plus" onPress={onPressFab} />
+        </Stack.Toolbar>
+      )}
     </>
   );
 };

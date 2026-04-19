@@ -32,7 +32,7 @@ export const ProductRenderItem = memo(
     item: ProductTypes;
     index: number;
     isEditingMode: boolean;
-    onLongPress: () => void;
+    onLongPress: (item: ProductTypes) => void;
     onPress: (id: string) => void;
     isSelected: boolean;
     categories: ProductCategoryTypes[];
@@ -77,7 +77,7 @@ export const ProductRenderItem = memo(
             backgroundColor: colors.card,
           }}
         >
-          <Pressable onLongPress={onLongPress} onPress={handlePress}>
+          <Pressable onLongPress={()=>onLongPress(item)} onPress={handlePress}>
             {/* Image with overlays */}
             <Box className="relative">
               <Image

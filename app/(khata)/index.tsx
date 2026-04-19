@@ -1,10 +1,11 @@
 import { TABLES } from "@network/contants";
 import { supabase } from "@network/supabase";
+import { deleteKhata } from "@network";
 import React, { useCallback, useEffect, useState } from "react";
-import { View, StyleSheet, ActivityIndicator, Pressable } from "react-native";
+import { View, StyleSheet, ActivityIndicator, Pressable, Alert } from "react-native";
 import { Stack, useFocusEffect } from "expo-router";
 import { useTheme } from "@react-navigation/native";
-import { NotepadText, Plus } from "lucide-react-native";
+import { CheckCheck, NotepadText, Plus, Trash2, X } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { Text } from "@components/ui/text";
 import { AddKhataModal, KhataRenderItem } from "@components/Khata";
@@ -19,6 +20,8 @@ const KhataList = () => {
   const [khataList, setKhataList] = useState<KhataItemTypes[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const fetchKhataList = async () => {
     setIsLoading(true);
@@ -78,35 +81,134 @@ const KhataList = () => {
     );
   }, []);
 
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleEnterEditMode = useCallback((id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setEditMode(true);
+    setSelectedIds(new Set([id]));
+  }, []);
+
+  const handleCancelEditMode = useCallback(() => {
+    setEditMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    if (selectedIds.size === khataList.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(khataList.map((item) => item.id)));
+    }
+  }, [khataList, selectedIds.size]);
+
+  const handleDeleteSelected = useCallback(() => {
+    if (selectedIds.size === 0) return;
+    Alert.alert(
+      "Delete Entries",
+      `Are you sure you want to delete ${selectedIds.size} ${selectedIds.size === 1 ? "entry" : "entries"}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const idsToDelete = Array.from(selectedIds);
+            setKhataList((pre) => pre.filter((_) => !selectedIds.has(_.id)));
+            setEditMode(false);
+            setSelectedIds(new Set());
+            await Promise.all(idsToDelete.map((id) => deleteKhata({ id })));
+          },
+        },
+      ],
+    );
+  }, [selectedIds]);
+
   return (
     <>
       <Stack.Screen
         options={{
-          title: "Khata Book",
+          title: editMode
+            ? `${selectedIds.size} Selected`
+            : "Khata Book",
           headerTitleAlign: "center",
           headerShadowVisible: false,
-          headerRight: () => (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                alignSelf: "center",
-                paddingHorizontal: 5,
-                gap: 8,
-              }}
-            >
-              {isLoading ? <ActivityIndicator color={colors.text} /> : null}
-              <Pressable
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setShowModal(true);
+          headerLeft: editMode
+            ? () => (
+                <Pressable
+                  onPress={handleCancelEditMode}
+                  style={styles.headerButton}
+                >
+                  <X size={20} color={colors.text} strokeWidth={2.5} />
+                </Pressable>
+              )
+            : undefined,
+          headerRight: () =>
+            editMode ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingHorizontal: 5,
+                  gap: 8,
                 }}
-                style={styles.headerButton}
               >
-                <Plus size={20} color={colors.text} strokeWidth={2.5} />
-              </Pressable>
-            </View>
-          ),
+                <Pressable
+                  onPress={handleSelectAll}
+                  style={styles.headerButton}
+                >
+                  <CheckCheck
+                    size={20}
+                    color={
+                      selectedIds.size === khataList.length
+                        ? colors.primary
+                        : colors.text
+                    }
+                    strokeWidth={2.5}
+                  />
+                </Pressable>
+                <Pressable
+                  onPress={handleDeleteSelected}
+                  style={[
+                    styles.headerButton,
+                    { opacity: selectedIds.size === 0 ? 0.4 : 1 },
+                  ]}
+                  disabled={selectedIds.size === 0}
+                >
+                  <Trash2 size={20} color="#ef4444" strokeWidth={2.5} />
+                </Pressable>
+              </View>
+            ) : (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  alignSelf: "center",
+                  paddingHorizontal: 5,
+                  gap: 8,
+                }}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color={colors.text} />
+                ) : null}
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setShowModal(true);
+                  }}
+                  style={styles.headerButton}
+                >
+                  <Plus size={20} color={colors.text} strokeWidth={2.5} />
+                </Pressable>
+              </View>
+            ),
         }}
       />
 
@@ -116,10 +218,11 @@ const KhataList = () => {
           renderItem={({ item }) => (
             <KhataRenderItem
               item={item}
+              editMode={editMode}
+              isSelected={selectedIds.has(item.id)}
+              onSelect={() => toggleSelect(item.id)}
+              onLongPress={() => handleEnterEditMode(item.id)}
               onRefresh={(is_completed) => handleRefresh(item.id, is_completed)}
-              onDelete={() => {
-                setKhataList((pre) => pre.filter((_) => _.id !== item.id));
-              }}
             />
           )}
           keyExtractor={(item) => item.id}
