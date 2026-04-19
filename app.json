@@ -2,7 +2,7 @@
   "expo": {
     "name": "B Mart",
     "slug": "b-mart",
-    "version": "2.0",
+    "version": "1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "owner": "b-mart",
@@ -25,7 +25,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": ["android.permission.RECORD_AUDIO"],
-      "package": "com.bmart.product.list"
+      "package": "com.shop.bmart"
     },
     "web": {
       "output": "static",

@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:214477066669:android:cc59ad17795dc958fbd124",
+        "mobilesdk_app_id": "1:214477066669:android:9ba444f096c00afdfbd124",
         "android_client_info": {
-          "package_name": "com.bmart.product.list"
+          "package_name": "com.shop.bmart"
         }
       },
       "oauth_client": [],

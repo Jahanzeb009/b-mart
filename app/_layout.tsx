@@ -94,10 +94,7 @@ function RootLayoutNav() {
                       name="(product)/index"
                       options={{
                         title: "B Mart",
-                        // statusBarTranslucent: true,
-                        // headerTransparent:false,
-                        // headerShadowVisible: false,
-                        // headerBlurEffect: "systemMaterial",
+                        headerShadowVisible: false,
 
                         headerTitleAlign: "center",
                       }}
@@ -126,12 +123,12 @@ const Dark: typeof DarkTheme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    background: "#0a0a0a",
-    border: "#2c2c2e",
-    card: "#1c1c1e",
+    background: "#0B0F14",
+    border: "#1F2937",
+    card: "#111827",
     notification: "#ff453a",
     primary: "#409cff",
-    text: "#d1d1d6",
+    text: "#E5E7EB",
   },
 };
 
@@ -139,11 +136,11 @@ const Light: typeof DefaultTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: "#f2f2f2",
-    border: "#d8d8d8",
+    background: "#F5F7FA",
+    border: "#E5E7EB",
     card: "#ffffff",
     notification: "#ff3b30",
     primary: "#007aff",
-    text: "#2c2c2e",
+    text: "#1C1C1E",
   },
 };

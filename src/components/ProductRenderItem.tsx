@@ -71,6 +71,11 @@ export const ProductRenderItem = memo(
           variant="filled"
           key={index}
           className="p-0 m-[5px] overflow-hidden rounded-xl"
+          style={{
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.card,
+          }}
         >
           <Pressable onLongPress={onLongPress} onPress={handlePress}>
             {/* Image with overlays */}

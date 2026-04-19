@@ -52,9 +52,7 @@ export const ChipsContainer = forwardRef<
               style={{
                 backgroundColor: isSelected
                   ? colors.primary
-                  : dark
-                    ? "#2c2c2e"
-                    : "#e5e5ea",
+                  : colors.border,
                 borderWidth: 1,
                 borderColor: isSelected ? colors.primary : "transparent",
               }}

@@ -323,6 +323,86 @@ const Home = () => {
     setQueryText("");
   };
 
+  const chips = (
+    <View
+      style={{
+        paddingVertical: 10,
+      }}
+    >
+      <ChipsContainer
+        ref={flatRef}
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onPress={(item) => {
+          Haptics.selectionAsync();
+          userScrollAction.current = true;
+          setSelectedCategory(item);
+        }}
+      />
+
+      {showSearch && (
+        <CustomInput
+          rightIcon={
+            <X
+              size={24}
+              color={colors.text}
+              style={{ marginRight: 10 }}
+              onPress={onSearch}
+            />
+          }
+          placeholder="Search Product"
+          onChangeText={handleSearchChange}
+          autoFocus
+          keyboardAppearance="default"
+          containerStyle={{
+            marginTop: 15,
+            marginHorizontal: 15,
+            backgroundColor: colors.background,
+          }}
+        />
+      )}
+
+      {/* Stats strip */}
+      {!isLoading && totalProducts > 0 && (
+        <Box
+          className="flex-row justify-between px-4 pb-2 pt-2"
+          style={{ borderTopWidth: 0 }}
+        >
+          <Text className="text-xs" style={{ color: colors.text + "60" }}>
+            {totalProducts} product{totalProducts !== 1 ? "s" : ""}
+            {selectedCategory.name !== "all"
+              ? ` in ${selectedCategory.name}`
+              : ""}
+          </Text>
+          {totalProfit > 0 && (
+            <Text className="text-xs font-medium" style={{ color: "#22c55e" }}>
+              Total margin: {formatCurrency(totalProfit)}
+            </Text>
+          )}
+        </Box>
+      )}
+
+      {/* Selection count bar */}
+      {isEditingMode && selectedIds.size > 0 && (
+        <Box
+          className="px-4 py-2"
+          style={{
+            backgroundColor: dark
+              ? colors.primary + "20"
+              : colors.primary + "10",
+          }}
+        >
+          <Text
+            className="text-xs font-medium"
+            style={{ color: colors.primary }}
+          >
+            {selectedIds.size} selected
+          </Text>
+        </Box>
+      )}
+    </View>
+  );
+
   return (
     <>
       <Stack.Screen
@@ -380,82 +460,7 @@ const Home = () => {
         }}
       />
       <View style={{ flex: 1 }}>
-        <View style={{ backgroundColor: colors.card, paddingVertical: 10 }}>
-          <ChipsContainer
-            ref={flatRef}
-            categories={categories}
-            selectedCategory={selectedCategory}
-            onPress={(item) => {
-              Haptics.selectionAsync();
-              userScrollAction.current = true;
-              setSelectedCategory(item);
-            }}
-          />
-
-          {showSearch && (
-            <CustomInput
-              rightIcon={
-                <X
-                  size={24}
-                  color={colors.text}
-                  style={{ marginRight: 10 }}
-                  onPress={onSearch}
-                />
-              }
-              placeholder="Search Product"
-              onChangeText={handleSearchChange}
-              autoFocus
-              keyboardAppearance="default"
-              containerStyle={{
-                marginTop: 15,
-                marginHorizontal: 15,
-                backgroundColor: colors.background,
-              }}
-            />
-          )}
-
-          {/* Stats strip */}
-          {!isLoading && totalProducts > 0 && (
-            <Box
-              className="flex-row justify-between px-4 pb-2 pt-2"
-              style={{ borderTopWidth: 0 }}
-            >
-              <Text className="text-xs" style={{ color: colors.text + "60" }}>
-                {totalProducts} product{totalProducts !== 1 ? "s" : ""}
-                {selectedCategory.name !== "all"
-                  ? ` in ${selectedCategory.name}`
-                  : ""}
-              </Text>
-              {totalProfit > 0 && (
-                <Text
-                  className="text-xs font-medium"
-                  style={{ color: "#22c55e" }}
-                >
-                  Total margin: {formatCurrency(totalProfit)}
-                </Text>
-              )}
-            </Box>
-          )}
-
-          {/* Selection count bar */}
-          {isEditingMode && selectedIds.size > 0 && (
-            <Box
-              className="px-4 py-2"
-              style={{
-                backgroundColor: dark
-                  ? colors.primary + "20"
-                  : colors.primary + "10",
-              }}
-            >
-              <Text
-                className="text-xs font-medium"
-                style={{ color: colors.primary }}
-              >
-                {selectedIds.size} selected
-              </Text>
-            </Box>
-          )}
-        </View>
+        {chips}
 
         <View style={{ flex: 1 }}>
           {filterData.length === 0 ? (
@@ -475,7 +480,9 @@ const Home = () => {
               keyboardShouldPersistTaps="handled"
               automaticallyAdjustKeyboardInsets
               optimizeItemArrangement
-              contentContainerStyle={{ paddingBottom: inset.bottom * 3 }}
+              contentContainerStyle={{
+                paddingBottom: 150,
+              }}
             />
           ) : (
             <ScrollView
@@ -501,7 +508,7 @@ const Home = () => {
               left: 0,
               right: 0,
               bottom: 0,
-              height: 250,
+              height: 150,
             }}
           />
         )}
