@@ -54,7 +54,13 @@
         }
       ],
       "expo-sqlite",
-      "expo-build-properties",
+      [
+        "expo-build-properties",
+        {
+          "buildReactNativeFromSource": true,
+          "useHermesV1": true
+        }
+      ],
       "./src/plugins/withExcludeDuplicateDeps",
       "./src/plugins/withFmtFix",
       "expo-image"
