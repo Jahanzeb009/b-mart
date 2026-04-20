@@ -25,7 +25,8 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": ["android.permission.RECORD_AUDIO"],
-      "package": "com.shop.bmart"
+      "package": "com.shop.bmart",
+      "versionCode": 8
     },
     "web": {
       "output": "static",
@@ -54,13 +55,7 @@
         }
       ],
       "expo-sqlite",
-      [
-        "expo-build-properties",
-        {
-          "buildReactNativeFromSource": true,
-          "useHermesV1": true
-        }
-      ],
+      "expo-build-properties",
       "./src/plugins/withExcludeDuplicateDeps",
       "./src/plugins/withFmtFix",
       "expo-image"

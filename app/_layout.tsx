@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import "react-native-reanimated";
 import "@sheets";
 import { SheetProvider } from "react-native-actions-sheet";
-import { Platform, StatusBar, useColorScheme, View } from "react-native";
+import { Appearance, Platform, StatusBar, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
@@ -18,6 +18,7 @@ import "@/global.css";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@src/network/supabase";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useColorScheme } from "nativewind";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -41,7 +42,7 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  const colorMode = useColorScheme().colorScheme;
 
   useEffect(() => {
     let mounted = true;
@@ -59,57 +60,44 @@ function RootLayoutNav() {
     };
   }, []);
 
-  const isDark = colorScheme === "dark";
-
-  const statusBarHeight = StatusBar.currentHeight;
+  const isDark = colorMode === "dark";
 
   return (
     <SafeAreaProvider style={{ flex: 1, backgroundColor: "black" }}>
-      <GluestackUIProvider mode={"system"}>
+      <GluestackUIProvider mode="system">
         <KeyboardProvider>
           <GestureHandlerRootView style={{ flex: 1, backgroundColor: "black" }}>
             <ThemeProvider value={isDark ? Dark : Light}>
               <SheetProvider>
-                <View
-                  style={{
-                    flex: 1,
-                    backgroundColor: isDark
-                      ? Dark.colors.background
-                      : Light.colors.background,
-                    paddingTop: statusBarHeight,
+                <Stack
+                  screenOptions={{
+                    ...(Platform.OS === "android"
+                      ? {
+                          statusBarStyle: isDark ? "light" : "dark",
+                        }
+                      : {}),
+                    headerBackTitle: "Back",
                   }}
                 >
-                  <Stack
-                    // screenLayout={({children})=><View style={{flex:1, backgroundColor:'pink', marginTop: 30}}>{children}</View>}
-                    screenOptions={{
-                      ...(Platform.OS === "android"
-                        ? {
-                            statusBarStyle: isDark ? "light" : "dark",
-                          }
-                        : {}),
-                      headerBackTitle: "Back",
-                    }}
-                  >
-                    <Stack.Screen
-                      name="(product)/index"
-                      options={{
-                        title: "B Mart",
-                        headerShadowVisible: false,
+                  <Stack.Screen
+                    name="(product)/index"
+                    options={{
+                      title: "B Mart",
+                      headerShadowVisible: false,
 
-                        headerTitleAlign: "center",
-                      }}
-                    />
-                    <Stack.Screen name="(product)/add" />
-                    <Stack.Screen
-                      name="(product)/details"
-                      options={{
-                        headerTransparent: Platform.OS === "ios",
-                        title: "Product Details",
-                      }}
-                    />
-                    <Stack.Screen name="(khata)/index" />
-                  </Stack>
-                </View>
+                      headerTitleAlign: "center",
+                    }}
+                  />
+                  <Stack.Screen name="(product)/add" />
+                  <Stack.Screen
+                    name="(product)/details"
+                    options={{
+                      headerTransparent: Platform.OS === "ios",
+                      title: "Product Details",
+                    }}
+                  />
+                  <Stack.Screen name="(khata)/index" />
+                </Stack>
               </SheetProvider>
             </ThemeProvider>
           </GestureHandlerRootView>
@@ -136,9 +124,10 @@ const Light: typeof DefaultTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: "#F5F7FA",
-    border: "#E5E7EB",
+    background: "#f2f2f7",
+    border: "#c5c5c7",
     card: "#ffffff",
+    // card: "#e7e7f3",
     notification: "#ff3b30",
     primary: "#007aff",
     text: "#1C1C1E",

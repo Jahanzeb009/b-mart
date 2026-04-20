@@ -23,6 +23,8 @@ import { calculateTotal } from "@helper";
 import { impactAsync, ImpactFeedbackStyle } from "expo-haptics";
 import { Box } from "../ui/box";
 
+const COLLAPSED_HEIGHT_INITIAL = Platform.OS === "web" ? 60 : 0;
+
 const KhataRenderItem = ({
   item,
   editMode,
@@ -30,9 +32,13 @@ const KhataRenderItem = ({
   onSelect,
   onLongPress,
   onRefresh,
+  index,
+  totalCount,
 }: {
   item: KhataItemTypes;
+  index: number;
   editMode: boolean;
+  totalCount: number;
   isSelected: boolean;
   onSelect: () => void;
   onLongPress: () => void;
@@ -40,7 +46,9 @@ const KhataRenderItem = ({
 }) => {
   const [showMoreText, setShowMoreText] = useState(false);
 
-  const [collapsedHeight, setCollapsedHeight] = useState(60);
+  const [collapsedHeight, setCollapsedHeight] = useState(
+    COLLAPSED_HEIGHT_INITIAL,
+  );
   const [expandedHeight, setExpandedHeight] = useState(0);
 
   const is_completed = item.is_completed;
@@ -64,12 +72,11 @@ const KhataRenderItem = ({
 
   const animatedStyle = useAnimatedStyle(() => ({
     flex: 1,
-    height: animatedHeight.value + 15, // added 15 to show last line
+    height: animatedHeight.value, // added 15 to show last line
     overflow: "hidden",
   }));
 
   const animatedPressableStyle = useAnimatedStyle(() => ({
-    borderRadius: withTiming(isPressed.value ? 10 : 5, { duration: 150 }),
     overflow: "hidden",
     transform: [
       {
@@ -84,17 +91,26 @@ const KhataRenderItem = ({
     textDecorationStyle: "double",
   };
 
+  const chevronAniStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        rotate: withTiming(showMoreText ? "180deg" : "0deg", { duration: 300 }),
+      },
+    ],
+  }));
+
   return (
     <Animated.View style={animatedPressableStyle}>
       <Pressable
-        style={StyleSheet.flatten([
-          styles.card,
-          {
-            flex: 1,
-            backgroundColor: isSelected ? colors.primary + "15" : colors.card,
-            borderColor: isSelected ? colors.primary : colors.border,
-          },
-        ])}
+        style={{
+          flex: 1,
+          backgroundColor: isSelected ? colors.primary + "15" : colors.card,
+          borderTopLeftRadius: index === 0 ? 20 : 0,
+          borderTopRightRadius: index === 0 ? 20 : 0,
+          borderBottomLeftRadius: index === totalCount - 1 ? 20 : 0,
+          borderBottomRightRadius: index === totalCount - 1 ? 20 : 0,
+          overflow: "hidden",
+        }}
         onPress={() => {
           if (editMode) {
             onSelect();
@@ -137,6 +153,31 @@ const KhataRenderItem = ({
 
             {!!item.description && (
               <Animated.View style={animatedStyle}>
+                {/* Measure collapsed height */}
+                {Platform.OS !== "web" && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      width: "100%",
+                      opacity: 0,
+                    }}
+                    onLayout={(e) => {
+                      const h = e.nativeEvent.layout.height;
+                      if (h > 0) setCollapsedHeight(h);
+                    }}
+                  >
+                    <Text
+                      selectable={false}
+                      size="md"
+                      style={{
+                        color: colors.text + "99",
+                      }}
+                      numberOfLines={2}
+                    >
+                      {item.description}
+                    </Text>
+                  </View>
+                )}
                 {/* Measure expanded height (all lines) */}
                 <View
                   style={{
@@ -146,12 +187,13 @@ const KhataRenderItem = ({
                   }}
                   onLayout={(e) => {
                     const h = e.nativeEvent.layout.height;
-                    if (h > 0) setExpandedHeight(h + 20);
+                    if (h > 0)
+                      setExpandedHeight(h + (Platform.OS === "web" ? 20 : 0));
                   }}
                 >
                   <Text
                     selectable={false}
-                    size="sm"
+                    size="md"
                     style={{
                       color: colors.text + "99",
                     }}
@@ -228,17 +270,15 @@ const KhataRenderItem = ({
         {expandedHeight > collapsedHeight + 10 && (
           <Box
             style={{
-              backgroundColor: colors.border,
+              backgroundColor: colors.border + "50",
               paddingVertical: Platform.OS === "web" ? 10 : 5,
               justifyContent: "center",
               alignItems: "center",
             }}
           >
-            {showMoreText ? (
-              <ChevronUp size={24} color={colors.text + "99"} />
-            ) : (
-              <ChevronDown size={24} color={colors.text + "99"} />
-            )}
+            <Animated.View style={chevronAniStyle}>
+              <ChevronDown size={24} color={colors.primary + "99"} />
+            </Animated.View>
           </Box>
         )}
       </Pressable>
@@ -249,14 +289,6 @@ const KhataRenderItem = ({
 export default KhataRenderItem;
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: StyleSheet.hairlineWidth,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
   iconBadge: {
     width: 26,
     height: 26,

@@ -531,8 +531,8 @@ const AddProductScreen = () => {
           {
             backgroundColor: colors.background,
             gap: 15,
-            marginTop: 30,
-            paddingBottom: inset.bottom,
+            paddingTop: 30,
+            paddingBottom: inset.bottom + 30,
           },
         ])}
       >
@@ -657,8 +657,12 @@ const AddProductScreen = () => {
               value={productInfo.extra_info}
               multiline
               textAlignVertical="top"
-              containerStyle={{ minHeight: 150 }}
-              inputStyle={{ paddingTop: 10, flex: 1 }}
+              style={{
+                minHeight: 150,
+              }}
+              containerStyle={{
+                alignItems: "flex-start",
+              }}
               onSubmitEditing={() =>
                 params.isEditing ? handleUpdateProduct() : handleSaveProduct()
               }
