@@ -36,6 +36,7 @@ import {
   Search,
   Package,
   CheckCheck,
+  UserCircle2,
 } from "lucide-react-native";
 import { debounce } from "lodash";
 import { ChipsContainer } from "@components/ChipsContainer";
@@ -451,7 +452,20 @@ const Home = () => {
                   <X size={22} color={colors.text} strokeWidth={2.5} />
                 </Pressable>
               )
-            : undefined,
+            : () => (
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    router.navigate("/profile");
+                  }}
+                  style={{
+                    padding: 5,
+                    paddingLeft: Platform.OS === "web" ? 20 : 5,
+                  }}
+                >
+                  <UserCircle2 size={24} color={colors.text} />
+                </Pressable>
+              ),
           headerRight: () =>
             isEditingMode ? (
               <View

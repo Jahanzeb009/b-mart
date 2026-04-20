@@ -3,8 +3,8 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { Stack } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
+import { router, Stack, useSegments } from "expo-router";
+import { SplashScreen } from "expo-router";
 import { useEffect, useState } from "react";
 import "react-native-reanimated";
 import "@sheets";
@@ -33,24 +33,31 @@ export const unstable_settings = {
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
-  useEffect(() => {
-    SplashScreen.hideAsync();
-  }, []);
-
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
+const RootLayout = () => {
   const colorMode = useColorScheme().colorScheme;
+
+  const [session, setSession] = useState<Session | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const segments = useSegments();
+  console.log({ segments });
+
+  useEffect(() => {
+    if (authReady) SplashScreen.hideAsync();
+  }, [authReady]);
 
   useEffect(() => {
     let mounted = true;
 
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setSession(data.session);
+      setAuthReady(true);
+    });
+
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (_event, nextSession) => {
         if (!mounted) return;
-        console.log("session", !!session);
+        setSession(nextSession);
       },
     );
 
@@ -59,6 +66,16 @@ function RootLayoutNav() {
       listener.subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (!authReady) return;
+    const onLoginScreen = segments[0] === "login";
+    if (!session && !onLoginScreen) {
+      router.replace("/login");
+    } else if (session && onLoginScreen) {
+      router.replace("/(product)");
+    }
+  }, [authReady, session, segments]);
 
   const isDark = colorMode === "dark";
 
@@ -97,6 +114,8 @@ function RootLayoutNav() {
                     }}
                   />
                   <Stack.Screen name="(khata)/index" />
+                  <Stack.Screen name="login" options={{ headerShown: false }} />
+                  <Stack.Screen name="profile" />
                 </Stack>
               </SheetProvider>
             </ThemeProvider>
@@ -105,7 +124,9 @@ function RootLayoutNav() {
       </GluestackUIProvider>
     </SafeAreaProvider>
   );
-}
+};
+
+export default RootLayout;
 
 const Dark: typeof DarkTheme = {
   ...DarkTheme,
