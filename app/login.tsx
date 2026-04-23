@@ -54,7 +54,8 @@ const Login = () => {
       <Stack.Screen options={{ headerShown: false }} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1, backgroundColor: colors.background }}
+        style={{ flex: 1, backgroundColor:colors.background }}
+        className="w-full md:w-1/2 max-w-[600] self-center"
       >
         <View
           style={{

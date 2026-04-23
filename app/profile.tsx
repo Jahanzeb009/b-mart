@@ -8,12 +8,13 @@ import { Text } from "@components/ui/text";
 import { Heading } from "@components/ui/heading";
 import { ButtonText } from "@components/ui/button";
 import { supabase } from "@src/network/supabase";
+import { getFcmToken, unregisterDeviceToken } from "@src/network/fcm";
 
 const EMAIL_DOMAIN = "@bmart.com";
 
 const Profile = () => {
   const { colors } = useTheme();
-
+   
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -35,6 +36,12 @@ const Profile = () => {
         style: "destructive",
         onPress: async () => {
           setLoading(true);
+          const { data } = await supabase.auth.getUser();
+          const userId = data.user?.id;
+          if (userId) {
+            const token = await getFcmToken();
+            await unregisterDeviceToken(userId, token);
+          }
           const { error } = await supabase.auth.signOut();
           setLoading(false);
           if (error) {

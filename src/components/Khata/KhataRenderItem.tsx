@@ -23,8 +23,6 @@ import { calculateTotal } from "@helper";
 import { impactAsync, ImpactFeedbackStyle } from "expo-haptics";
 import { Box } from "../ui/box";
 
-const COLLAPSED_HEIGHT_INITIAL = Platform.OS === "web" ? 60 : 0;
-
 const KhataRenderItem = ({
   item,
   editMode,
@@ -46,9 +44,7 @@ const KhataRenderItem = ({
 }) => {
   const [showMoreText, setShowMoreText] = useState(false);
 
-  const [collapsedHeight, setCollapsedHeight] = useState(
-    COLLAPSED_HEIGHT_INITIAL,
-  );
+  const [collapsedHeight, setCollapsedHeight] = useState(0);
   const [expandedHeight, setExpandedHeight] = useState(0);
 
   const is_completed = item.is_completed;
@@ -163,6 +159,7 @@ const KhataRenderItem = ({
                     }}
                     onLayout={(e) => {
                       const h = e.nativeEvent.layout.height;
+                      console.log("h ", h);
                       if (h > 0) setCollapsedHeight(h);
                     }}
                   >
@@ -178,35 +175,45 @@ const KhataRenderItem = ({
                     </Text>
                   </View>
                 )}
+
                 {/* Measure expanded height (all lines) */}
-                <View
-                  style={{
-                    position: "absolute",
-                    width: "100%",
-                    opacity: 0,
-                  }}
-                  onLayout={(e) => {
-                    const h = e.nativeEvent.layout.height;
-                    if (h > 0)
-                      setExpandedHeight(h + (Platform.OS === "web" ? 20 : 0));
-                  }}
-                >
-                  <Text
-                    selectable={false}
-                    size="md"
+                {Platform.OS !== "web" && (
+                  <View
                     style={{
-                      color: colors.text + "99",
+                      position: "absolute",
+                      width: "100%",
+                      opacity: 0,
+                    }}
+                    onLayout={(e) => {
+                      const h = e.nativeEvent.layout.height;
+                      console.log({ h });
+                      if (h > 0)
+                        setExpandedHeight(h + (Platform.OS === "web" ? 20 : 0));
                     }}
                   >
-                    {item.description}
-                  </Text>
-                </View>
+                    <Text
+                      selectable={false}
+                      size="md"
+                      style={{
+                        color: colors.text + "99",
+                      }}
+                    >
+                      {item.description}
+                    </Text>
+                  </View>
+                )}
 
                 {/* Visible text — no numberOfLines, height controls clipping */}
                 <Text
                   selectable={false}
                   size="md"
-                  style={{ color: colors.text + "99" }}
+                  style={StyleSheet.flatten([
+                    {
+                      color: colors.text + "99",
+                    },
+                    // @ts-ignore
+                    Platform.OS === "web" && { whiteSpace: "nowrap" },
+                  ])}
                 >
                   {item.description}
                 </Text>
@@ -267,11 +274,11 @@ const KhataRenderItem = ({
           </VStack>
         </HStack>
 
-        {expandedHeight > collapsedHeight + 10 && (
+        {expandedHeight > collapsedHeight + 10 && Platform.OS !== "web" && (
           <Box
             style={{
               backgroundColor: colors.border + "50",
-              paddingVertical: Platform.OS === "web" ? 10 : 5,
+              paddingVertical: 5,
               justifyContent: "center",
               alignItems: "center",
             }}

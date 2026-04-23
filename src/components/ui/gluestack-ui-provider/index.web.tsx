@@ -4,6 +4,7 @@ import { config } from './config';
 import { OverlayProvider } from '@gluestack-ui/core/overlay/creator';
 import { ToastProvider } from '@gluestack-ui/core/toast/creator';
 import { setFlushStyles } from '@gluestack-ui/utils/nativewind-utils';
+import { useColorScheme } from 'nativewind';
 import { script } from './script';
 
 export type ModeType = 'light' | 'dark' | 'system';
@@ -26,6 +27,13 @@ export function GluestackUIProvider({
   mode?: ModeType;
   children?: React.ReactNode;
 }) {
+  const { setColorScheme } = useColorScheme();
+
+  useSafeLayoutEffect(() => {
+    if (mode !== 'system') setColorScheme(mode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
   let cssVariablesWithMode = ``;
   Object.keys(config).forEach((configKey) => {
     cssVariablesWithMode +=

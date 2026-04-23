@@ -255,7 +255,7 @@ const Home = () => {
 
   const onLongPress = useCallback((item: ProductTypes) => {
     setIsEditingMode((pre) => !pre);
-    setSelectedIds(new Set([item.id]))
+    setSelectedIds(new Set([item.id]));
   }, []);
 
   const handleCancelEditMode = useCallback(() => {
@@ -302,11 +302,11 @@ const Home = () => {
     );
   }, [selectedIds]);
 
-  
   const renderProduct = useCallback(
     ({ item, index }: { item: ProductTypes; index: number }) => {
       return (
         <ProductRenderItem
+          key={item.id.toString()}
           item={item}
           categories={categories}
           index={index}
@@ -406,9 +406,12 @@ const Home = () => {
           placeholder="Search Product"
           onChangeText={handleSearchChange}
           autoFocus
-          keyboardAppearance="default"
           containerStyle={{
             marginTop: 15,
+            paddingVertical: Platform.select({
+              web: 5,
+              default: 0,
+            }),
             marginHorizontal: 15,
             backgroundColor: colors.background,
           }}

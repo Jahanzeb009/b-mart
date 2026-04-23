@@ -14,7 +14,7 @@ import Animated, {
 import { Text } from "./ui/text";
 
 type CustomTextInputProps = {
-  label: string;
+  label?: string;
   containerStyle?: ViewStyle;
   pressableStyle?: ViewStyle;
   leftIcon?: JSX.Element;
@@ -55,7 +55,10 @@ const CustomInput = forwardRef<TextInput, CustomTextInputProps>(
             borderWidth: 1,
             flexDirection: "row",
             alignItems: "center",
-            gap: 5,
+            gap: Platform.select({
+              web: 10,
+              default: 5,
+            }),
           },
           aniStyle,
           containerStyle,
@@ -67,6 +70,14 @@ const CustomInput = forwardRef<TextInput, CustomTextInputProps>(
           style={[
             {
               flex: 1,
+              gap: Platform.select({
+                web: 5,
+                default: 0,
+              }),
+              paddingBottom: Platform.select({
+                web: 5,
+                default: 0,
+              }),
               paddingTop: 5,
               paddingLeft: !!leftIcon ? 0 : 8,
             },
@@ -93,7 +104,7 @@ const CustomInput = forwardRef<TextInput, CustomTextInputProps>(
             style={[
               {
                 color: colors.text,
-                outline: "transparent",
+                outline: "none",
                 paddingVertical: Platform.select({
                   android: 5,
                   ios: 8,

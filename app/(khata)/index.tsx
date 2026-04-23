@@ -254,7 +254,10 @@ const KhataList = () => {
         }}
       />
 
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <View
+        style={{ flex: 1, backgroundColor: colors.background }}
+        className="w-full md:w-1/2 max-w-[600] self-center"
+      >
         <SectionList
           sections={khataList}
           renderSectionHeader={({ section }) => {

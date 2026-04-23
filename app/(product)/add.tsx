@@ -591,7 +591,7 @@ const AddProductScreen = () => {
               <CustomInput
                 // @ts-ignore
                 ref={getRef("invoice")}
-                label={"Invoicse"}
+                label={"Invoice"}
                 placeholder="Invoice"
                 keyboardType="numeric"
                 leftIcon={
