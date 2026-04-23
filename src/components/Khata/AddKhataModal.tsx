@@ -17,6 +17,7 @@ import { Banknote, FileText, User, X } from "lucide-react-native";
 import { ActivityIndicator } from "react-native";
 import { forwardRef, useEffect, useRef, useState } from "react";
 import { createKhata } from "@network";
+import { sendKhataPush } from "@src/network/push";
 import { calculateTotal } from "@helper";
 import { TextInput } from "react-native";
 import ActionSheet, {
@@ -69,6 +70,10 @@ const AddKhataModal = forwardRef<
       });
 
       if (result) {
+        sendKhataPush({
+          cust_name: result.cust_name,
+          description: result.description,
+        });
         resetForm();
         onSave();
       }
