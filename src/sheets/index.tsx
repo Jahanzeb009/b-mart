@@ -1,15 +1,14 @@
-import { registerSheet, SheetDefinition } from "react-native-actions-sheet";
+import { SheetRegister, SheetDefinition } from "react-native-actions-sheet";
+
 import AddCategorySheet from "./addCategorySheet";
 import UploadedImagesSheet from "./uploadedImagesSheet";
 import ShowAllCategoriesSheet from "./showAllCategoriesSheet";
 import { ProductCategoryTypes } from "../types";
 import ImageViewSheet from "./imageViewSheet";
+import AddKhataSheet from "./addKhataSheet";
 
-registerSheet("add-category-sheet", AddCategorySheet);
-registerSheet("uploaded-images-sheet", UploadedImagesSheet);
-registerSheet("show-all-categories-sheet", ShowAllCategoriesSheet);
-registerSheet("image-view-sheet", ImageViewSheet);
-
+// We extend some of the types here to give us great intellisense
+// across the app for all registered sheets.
 declare module "react-native-actions-sheet" {
   interface Sheets {
     "add-category-sheet": SheetDefinition<{
@@ -19,6 +18,11 @@ declare module "react-native-actions-sheet" {
       returnValue: string | null;
     }>;
     "image-view-sheet": SheetDefinition<{
+      payload: {
+        image: string;
+      };
+    }>;
+    "add-khata-sheet": SheetDefinition<{
       payload: {
         image: string;
       };
@@ -34,4 +38,16 @@ declare module "react-native-actions-sheet" {
   }
 }
 
-export {};
+export const Sheets = () => {
+  return (
+    <SheetRegister
+      sheets={{
+        "add-category-sheet": AddCategorySheet,
+        "uploaded-images-sheet": UploadedImagesSheet,
+        "show-all-categories-sheet": ShowAllCategoriesSheet,
+        "image-view-sheet": ImageViewSheet,
+        "add-khata-sheet": AddKhataSheet,
+      }}
+    />
+  );
+};

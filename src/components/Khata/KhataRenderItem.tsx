@@ -101,10 +101,10 @@ const KhataRenderItem = ({
         style={{
           flex: 1,
           backgroundColor: isSelected ? colors.primary + "15" : colors.card,
-          borderTopLeftRadius: index === 0 ? 20 : 0,
-          borderTopRightRadius: index === 0 ? 20 : 0,
-          borderBottomLeftRadius: index === totalCount - 1 ? 20 : 0,
-          borderBottomRightRadius: index === totalCount - 1 ? 20 : 0,
+          borderTopLeftRadius: index === 0 ? 20 : 5,
+          borderTopRightRadius: index === 0 ? 20 : 5,
+          borderBottomLeftRadius: index === totalCount - 1 ? 20 : 5,
+          borderBottomRightRadius: index === totalCount - 1 ? 20 :5,
           overflow: "hidden",
         }}
         onPress={() => {
@@ -159,7 +159,6 @@ const KhataRenderItem = ({
                     }}
                     onLayout={(e) => {
                       const h = e.nativeEvent.layout.height;
-                      console.log("h ", h);
                       if (h > 0) setCollapsedHeight(h);
                     }}
                   >
@@ -186,7 +185,6 @@ const KhataRenderItem = ({
                     }}
                     onLayout={(e) => {
                       const h = e.nativeEvent.layout.height;
-                      console.log({ h });
                       if (h > 0)
                         setExpandedHeight(h + (Platform.OS === "web" ? 20 : 0));
                     }}

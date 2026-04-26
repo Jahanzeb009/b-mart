@@ -55,10 +55,7 @@ const CustomInput = forwardRef<TextInput, CustomTextInputProps>(
             borderWidth: 1,
             flexDirection: "row",
             alignItems: "center",
-            gap: Platform.select({
-              web: 10,
-              default: 5,
-            }),
+            gap: 10,
           },
           aniStyle,
           containerStyle,

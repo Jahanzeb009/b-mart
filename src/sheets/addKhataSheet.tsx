@@ -1,39 +1,23 @@
-import {
-  AlertDialog,
-  AlertDialogBackdrop,
-  AlertDialogBody,
-  AlertDialogCloseButton,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-} from "@components/ui/alert-dialog";
-import { Button, ButtonText } from "@components/ui/button";
-import { Heading } from "@components/ui/heading";
 import { useTheme } from "@react-navigation/native";
-import { VStack } from "../ui/vstack";
-import { Text } from "@components/ui/text";
-import { HStack } from "@components/ui/hstack";
-import { Banknote, FileText, User, X } from "lucide-react-native";
+import { useRef, useState } from "react";
 import { ActivityIndicator } from "react-native";
-import { forwardRef, useEffect, useRef, useState } from "react";
-import { createKhata } from "@network";
-import { sendKhataPush } from "@src/network/push";
-import { calculateTotal } from "@helper";
-import { TextInput } from "react-native";
 import ActionSheet, {
-  ActionSheetRef,
-  ScrollView,
+  SheetManager,
+  SheetProps,
 } from "react-native-actions-sheet";
-import CustomInput from "../CustomInput";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Heading } from "../components/ui/heading";
+import { VStack } from "../components/ui/vstack";
+import CustomInput from "../components/CustomInput";
+import { Banknote, FileText, User } from "lucide-react-native";
+import { calculateTotal } from "../helper";
+import { HStack } from "../components/ui/hstack";
+import { Button, ButtonText } from "../components/ui/button";
+import { sendKhataPush } from "../network/push";
+import { createKhata } from "../network";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
-const AddKhataModal = forwardRef<
-  ActionSheetRef,
-  {
-    showModal: boolean;
-    onSave: () => void;
-    onClose: () => void;
-  }
->(({ showModal, onClose, onSave }, ref) => {
+const AddKhataSheet = (props: SheetProps<"add-khata-sheet">) => {
   const { colors } = useTheme();
 
   const [isSaving, setIsSaving] = useState(false);
@@ -41,6 +25,7 @@ const AddKhataModal = forwardRef<
     cust_name: "",
     description: "",
   });
+
   const [totalAmount, setTotalAmount] = useState("0");
 
   const inputRefs = useRef<Record<string, any>>({});
@@ -48,6 +33,7 @@ const AddKhataModal = forwardRef<
   const getRef = (name: string) => (ref: any) => {
     inputRefs.current[name] = ref;
   };
+  const inset = useSafeAreaInsets();
 
   const resetForm = () => {
     setUserInput({
@@ -75,7 +61,7 @@ const AddKhataModal = forwardRef<
           description: result.description,
         });
         resetForm();
-        onSave();
+        SheetManager.hide("add-khata-sheet");
       }
     } catch (e) {
       console.error("Error saving khata:", e);
@@ -85,34 +71,41 @@ const AddKhataModal = forwardRef<
   };
 
   const handleUserInput = (key: keyof typeof userInput) => (value: any) => {
-    // if (key === "amount") {
-    //     const match = value.match(/[+-]?\d*\.?\d+/)
-
-    //     setUserInput(pre => ({ ...pre, [key]: match ? match[0] : '' }))
-    // } else {
     setUserInput((pre) => ({ ...pre, [key]: value }));
-    // }
+  };
+
+  const onClose = () => {
+    SheetManager.hide("add-khata-sheet");
   };
 
   return (
     <ActionSheet
-      ref={ref}
       gestureEnabled
+      id={props.sheetId}
+      keyboardHandlerEnabled={false}
       containerStyle={{
-        backgroundColor: colors.card,
-        padding: 15,
-        borderTopLeftRadius: 30,
+        backgroundColor: colors.background,
+        // minHeight: "70%",
+        paddingBottom: inset.bottom,
+        paddingHorizontal: 15,
+        paddingTop: 15,
         borderTopRightRadius: 30,
+        borderTopLeftRadius: 30,
+        // width: Platform.OS === "web" ? 500 : undefined,
       }}
       indicatorStyle={{ backgroundColor: colors.border }}
       onClose={resetForm}
       onOpen={() => {
         setTimeout(() => {
-          inputRefs.current["cust_name"]?.focus();
+          inputRefs.current.cust_name?.focus();
         }, 100);
       }}
     >
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        bottomOffset={15}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <Heading
           size="lg"
           className="text-typography-950"
@@ -124,6 +117,7 @@ const AddKhataModal = forwardRef<
         <VStack className="gap-5 mt-5">
           {/* Customer Name */}
           <CustomInput
+            ref={getRef("cust_name")}
             label="Customer Name"
             placeholder="Enter customer name"
             value={userInput.cust_name}
@@ -131,7 +125,7 @@ const AddKhataModal = forwardRef<
             onChangeText={handleUserInput("cust_name")}
             returnKeyType="next"
             onSubmitEditing={() => {
-              inputRefs.current?.description?.focus();
+              inputRefs.current?.desc?.focus();
             }}
           />
 
@@ -146,6 +140,7 @@ const AddKhataModal = forwardRef<
 
           {/* Description */}
           <CustomInput
+            ref={getRef("desc")}
             label="Description"
             multiline
             textAlignVertical="top"
@@ -194,9 +189,9 @@ const AddKhataModal = forwardRef<
             )}
           </Button>
         </HStack>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </ActionSheet>
   );
-});
+};
 
-export default AddKhataModal;
+export default AddKhataSheet;

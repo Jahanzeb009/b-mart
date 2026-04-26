@@ -2,62 +2,73 @@ import {
   View,
   ActivityIndicator,
   StyleSheet,
-  DimensionValue,
+  TouchableWithoutFeedback,
 } from "react-native";
 import React, { useState } from "react";
 import { useTheme } from "@react-navigation/native";
 import FastImage, { FastImageProps } from "@d11/react-native-fast-image";
+import Animated, { measure, useAnimatedRef } from "react-native-reanimated";
+import { runOnJS, runOnUI } from "react-native-worklets";
 
-const CustomImage = ({
-  width,
-  height,
-  resizeMode,
-  source,
-  style,
-  imageStyle,
-}: {
+type Props = {
   source: FastImageProps["source"];
-  width: DimensionValue;
-  height: DimensionValue;
-  resizeMode: FastImageProps["resizeMode"];
+  resizeMode?: FastImageProps["resizeMode"];
   style?: View["props"]["style"];
   imageStyle?: FastImageProps["style"];
-}) => {
-  const [isLoadingImage, setIsLoadingImage] = useState(false);
+  onPress?: (m: ReturnType<typeof measure>) => void;
+};
 
+const CustomImage = ({
+  source,
+  resizeMode = "cover",
+  onPress,
+  style,
+  imageStyle,
+}: Props) => {
+  const [isLoading, setIsLoading] = useState(false);
   const { colors } = useTheme();
+  const imageRef = useAnimatedRef<Animated.View>();
 
-  const MAX_IMAGE_SIZE = 150;
-  const IMAGE_WIDTH = width ? Math.max(MAX_IMAGE_SIZE, +width) : MAX_IMAGE_SIZE;
-  const IMAGE_HEIGHT = height
-    ? Math.max(MAX_IMAGE_SIZE, +height)
-    : MAX_IMAGE_SIZE;
+  const handlePress = () => {
+    if (!onPress) return;
+    runOnUI(() => {
+      const m = measure(imageRef);
+      runOnJS(onPress)(m);
+    })();
+  };
 
-  return (
-    <View
-      style={[
-        {
-          width: IMAGE_WIDTH,
-          height: IMAGE_HEIGHT,
-          borderRadius: 10,
-          overflow: "hidden",
-          backgroundColor: colors.card,
-        },
-        style,
-      ]}
+  const content = (
+    <Animated.View
+      ref={imageRef}
+      style={[styles.container, { backgroundColor: colors.card }, style]}
     >
       <FastImage
         source={source}
-        onLoadStart={() => setIsLoadingImage(true)}
-        onLoadEnd={() => setIsLoadingImage(false)}
-        style={[{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT }, imageStyle]}
+        onLoadStart={() => setIsLoading(true)}
+        onLoadEnd={() => setIsLoading(false)}
+        style={[StyleSheet.absoluteFill, imageStyle]}
         resizeMode={resizeMode}
       />
-      {isLoadingImage && (
-        <ActivityIndicator style={StyleSheet.absoluteFillObject} />
+      {isLoading && (
+        <ActivityIndicator style={StyleSheet.absoluteFill} />
       )}
-    </View>
+    </Animated.View>
+  );
+
+  if (!onPress) return content;
+
+  return (
+    <TouchableWithoutFeedback onPress={handlePress}>
+      {content}
+    </TouchableWithoutFeedback>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    overflow: "hidden",
+    borderRadius: 10,
+  },
+});
 
 export default CustomImage;

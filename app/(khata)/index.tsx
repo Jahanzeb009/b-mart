@@ -1,7 +1,7 @@
 import { TABLES } from "@network/contants";
 import { supabase } from "@network/supabase";
 import { deleteKhata } from "@network";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -10,17 +10,15 @@ import {
   Alert,
   SectionList,
 } from "react-native";
-import { Stack, useFocusEffect } from "expo-router";
+import { Stack } from "expo-router";
 import { useTheme } from "@react-navigation/native";
 import { CheckCheck, NotepadText, Plus, Trash2, X } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { Text } from "@components/ui/text";
 import { KhataRenderItem } from "@components/Khata";
-import AddKhataModal from "@components/Khata/AddKhataModal";
 import { KhataItemTypes } from "@types";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Divider } from "react-native-paper";
-import { ActionSheetRef } from "react-native-actions-sheet";
+import { SheetManager } from "react-native-actions-sheet";
 
 const KhataList = () => {
   const { colors } = useTheme();
@@ -30,11 +28,8 @@ const KhataList = () => {
     { title: string; data: KhataItemTypes[] }[]
   >([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  const actionSheetRef = useRef<ActionSheetRef>(null);
 
   const fetchKhataList = async () => {
     setIsLoading(true);
@@ -242,8 +237,11 @@ const KhataList = () => {
                 <Pressable
                   onPress={() => {
                     Haptics.selectionAsync();
-                    actionSheetRef.current?.show();
-                    setShowModal(true);
+                    SheetManager.show("add-khata-sheet", {
+                      onClose: () => {
+                        fetchKhataList();
+                      },
+                    });
                   }}
                   style={styles.headerButton}
                 >
@@ -274,9 +272,7 @@ const KhataList = () => {
               </View>
             );
           }}
-          ItemSeparatorComponent={() => (
-            <Divider style={{ backgroundColor: colors.text + "60" }} />
-          )}
+          stickySectionHeadersEnabled
           renderItem={({ item, index, section }) => (
             <KhataRenderItem
               item={item}
@@ -291,8 +287,8 @@ const KhataList = () => {
           )}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{
-            paddingVertical: 15,
-            padding: 15,
+            gap: 3,
+            paddingHorizontal: 15,
             paddingBottom: inset.bottom + 15,
           }}
           showsVerticalScrollIndicator={false}
@@ -301,20 +297,6 @@ const KhataList = () => {
       </View>
 
       {!isLoading && khataList.length === 0 ? <ListEmptyComponent /> : null}
-
-      <AddKhataModal
-        ref={actionSheetRef}
-        showModal={showModal}
-        onClose={() => {
-          setShowModal(false);
-          actionSheetRef.current?.hide();
-        }}
-        onSave={() => {
-          actionSheetRef.current?.hide();
-          setShowModal(false);
-          fetchKhataList();
-        }}
-      />
     </>
   );
 };

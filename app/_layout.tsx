@@ -8,7 +8,6 @@ import { router, Stack, useSegments } from "expo-router";
 import { SplashScreen } from "expo-router";
 import { useEffect, useState } from "react";
 import "react-native-reanimated";
-import "@sheets";
 import { SheetProvider } from "react-native-actions-sheet";
 import {
   ActivityIndicator,
@@ -26,6 +25,8 @@ import { Session } from "@supabase/supabase-js";
 import { supabase } from "@src/network/supabase";
 import { registerDeviceToken, subscribeToTokenRefresh } from "@src/network/fcm";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Sheets } from "@/src/sheets";
+import { StackNavigator } from "@/src/navigation";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -41,8 +42,8 @@ export const unstable_settings = {
 SplashScreen.preventAutoHideAsync();
 
 const RootLayout = () => {
-  const [colorMode, setColorMode] = useState<"light" | "dark">(
-    () => (Appearance.getColorScheme() === "dark" ? "dark" : "light"),
+  const [colorMode, setColorMode] = useState<"light" | "dark">(() =>
+    Appearance.getColorScheme() === "dark" ? "dark" : "light",
   );
 
   useEffect(() => {
@@ -112,6 +113,7 @@ const RootLayout = () => {
           <GestureHandlerRootView style={{ flex: 1, backgroundColor: "black" }}>
             <ThemeProvider value={isDark ? Dark : Light}>
               <SheetProvider>
+                <Sheets />
                 <StackNavigator isDark={isDark} authReady={authReady} />
               </SheetProvider>
             </ThemeProvider>
@@ -123,60 +125,6 @@ const RootLayout = () => {
 };
 
 export default RootLayout;
-
-const StackNavigator = ({
-  isDark,
-  authReady,
-}: {
-  isDark: boolean;
-  authReady: boolean;
-}) => {
-  const { colors } = useTheme();
-
-  if (!authReady) {
-    return (
-      <View
-        className="flex-1 justify-center items-center"
-        style={{ backgroundColor: colors.background }}
-      >
-        <ActivityIndicator size={"large"} />
-      </View>
-    );
-  }
-  return (
-    <Stack
-      screenOptions={{
-        ...(Platform.OS === "android"
-          ? {
-              statusBarStyle: isDark ? "light" : "dark",
-            }
-          : {}),
-        headerBackTitle: "Back",
-      }}
-    >
-      <Stack.Screen
-        name="(product)/index"
-        options={{
-          title: "B Mart",
-          headerShadowVisible: false,
-
-          headerTitleAlign: "center",
-        }}
-      />
-      <Stack.Screen name="(product)/add" />
-      <Stack.Screen
-        name="(product)/details"
-        options={{
-          headerTransparent: Platform.OS === "ios",
-          title: "Product Details",
-        }}
-      />
-      <Stack.Screen name="(khata)/index" />
-      <Stack.Screen name="login" options={{ headerShown: false }} />
-      <Stack.Screen name="profile" />
-    </Stack>
-  );
-};
 
 const Dark: typeof DarkTheme = {
   ...DarkTheme,
