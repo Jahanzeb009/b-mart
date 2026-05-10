@@ -44,8 +44,6 @@ const KhataRenderItem = ({
   onPress: () => void;
   onRefresh: (is_completed?: boolean) => void;
 }) => {
-  console.log(item);
-
   const [showMoreText, setShowMoreText] = useState(false);
 
   const [collapsedHeight, setCollapsedHeight] = useState(0);
@@ -58,10 +56,9 @@ const KhataRenderItem = ({
   const animatedHeight = useSharedValue(0);
   const { colors } = useTheme();
 
-  const updated_at = new Date(item.updated_at).toLocaleString();
-  {
-    ("\n");
-  }
+  const updated_at = new Date(item.updated_at).toLocaleTimeString("en-US", {
+    timeStyle: "short",
+  });
   const totalAmount = +calculateTotal(item.description)!;
 
   // Animate height when toggle changes
@@ -232,7 +229,9 @@ const KhataRenderItem = ({
                 size="xs"
                 style={{ color: colors.text + "99", fontStyle: "italic" }}
               >
-                {item.user.username}
+                by{" "}
+                {item.updated_by_user?.username ||
+                  item.created_by_user.username}
               </Text>
               <Text
                 selectable={false}

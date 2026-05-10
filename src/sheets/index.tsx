@@ -25,6 +25,7 @@ declare module "react-native-actions-sheet" {
     "add-khata-sheet": SheetDefinition<{
       payload?: {
         item?: KhataItemTypes;
+        uniqueCustNames: Array<string>;
       };
     }>;
     "show-all-categories-sheet": SheetDefinition<{

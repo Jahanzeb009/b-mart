@@ -48,11 +48,12 @@ interface KhataItemTypes {
   is_completed: boolean;
   created_by: string;
   updated_by: string | null;
-  user?: {
-    id: string;
+  created_by_user: {
     username: string;
-    email: string;
   };
+  updated_by_user: {
+    username: string;
+  } | null;
 }
 
 export {

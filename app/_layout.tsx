@@ -9,15 +9,9 @@ import { SplashScreen } from "expo-router";
 import { useEffect, useState } from "react";
 import "react-native-reanimated";
 import { SheetProvider } from "react-native-actions-sheet";
-import {
-  ActivityIndicator,
-  Appearance,
-  Platform,
-  StatusBar,
-  View,
-} from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import { useColorScheme } from "nativewind";
 
 import { GluestackUIProvider } from "@components/ui/gluestack-ui-provider";
 import "@/global.css";
@@ -42,16 +36,11 @@ export const unstable_settings = {
 SplashScreen.preventAutoHideAsync();
 
 const RootLayout = () => {
-  const [colorMode, setColorMode] = useState<"light" | "dark">(() =>
-    Appearance.getColorScheme() === "dark" ? "dark" : "light",
-  );
+  const { colorScheme, setColorScheme } = useColorScheme();
 
   useEffect(() => {
-    const sub = Appearance.addChangeListener(({ colorScheme }) => {
-      setColorMode(colorScheme === "dark" ? "dark" : "light");
-    });
-    return () => sub.remove();
-  }, []);
+    setColorScheme("system");
+  }, [setColorScheme]);
 
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -103,12 +92,12 @@ const RootLayout = () => {
     return () => unsubscribe();
   }, [session?.user.id]);
 
-  const isDark = colorMode === "dark";
+  const isDark = colorScheme === "dark";
 
   // console.log("authReady ", authReady);
   return (
     <SafeAreaProvider style={{ flex: 1, backgroundColor: "black" }}>
-      <GluestackUIProvider mode={colorMode}>
+      <GluestackUIProvider mode={colorScheme}>
         <KeyboardProvider>
           <GestureHandlerRootView style={{ flex: 1, backgroundColor: "black" }}>
             <ThemeProvider value={isDark ? Dark : Light}>

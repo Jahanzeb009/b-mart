@@ -33,7 +33,7 @@
       "predictiveBackGestureEnabled": false,
       "permissions": ["android.permission.POST_NOTIFICATIONS"],
       "package": "com.shop.bmart",
-      "versionCode": 10,
+      "versionCode": 11,
       "googleServicesFile": "./google-services.json"
     },
     "web": {

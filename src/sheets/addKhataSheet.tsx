@@ -1,7 +1,8 @@
 import { useTheme } from "@react-navigation/native";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert } from "react-native";
+import { ActivityIndicator, Alert, TouchableOpacity, View } from "react-native";
 import ActionSheet, {
+  ScrollView,
   SheetManager,
   SheetProps,
 } from "react-native-actions-sheet";
@@ -15,17 +16,24 @@ import { HStack } from "../components/ui/hstack";
 import { Button, ButtonText } from "../components/ui/button";
 import { sendKhataPush } from "../network/push";
 import { createKhata, updateKhata } from "../network";
-import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import {
+  KeyboardAwareScrollView,
+  KeyboardToolbar,
+} from "react-native-keyboard-controller";
 import { supabase } from "../network/supabase";
 import type { User as TUser } from "@supabase/supabase-js";
+import { Text } from "../components/ui/text";
 
 const AddKhataSheet = (props: SheetProps<"add-khata-sheet">) => {
   const { colors } = useTheme();
 
+  const uniqueCustNames = props.payload?.uniqueCustNames ?? [];
   const editingItem = props.payload?.item;
   const isEditMode = !!editingItem;
 
   const [user, setUser] = useState<TUser | null>(null);
+
+  const [isCustInputFocused, setIsCustInputFocused] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -171,9 +179,21 @@ const AddKhataSheet = (props: SheetProps<"add-khata-sheet">) => {
 
         <VStack className="gap-5 mt-5">
           {/* Customer Name */}
+          {/* <View> */}
           <CustomInput
             ref={getRef("cust_name")}
             label="Customer Name"
+            // suggestions={uniqueCustNames.filter((n) =>
+            //   n.toLowerCase().includes(userInput.cust_name.toLowerCase()),
+            // )}
+            // onPressSuggestion={(sugg) => {
+            //   setUserInput((prev) => ({
+            //     ...prev,
+            //     cust_name: sugg,
+            //   }));
+            // }}
+            onFocus={() => setIsCustInputFocused(true)}
+            onBlur={() => setIsCustInputFocused(false)}
             placeholder="Enter customer name"
             value={userInput.cust_name}
             leftIcon={<User color={colors.text} />}
@@ -183,6 +203,50 @@ const AddKhataSheet = (props: SheetProps<"add-khata-sheet">) => {
               inputRefs.current?.cust_desc?.focus();
             }}
           />
+          {/* {userInput.cust_name.trim().length > 0 &&
+              uniqueCustNames.some((n) =>
+                n.toLowerCase().includes(userInput.cust_name.toLowerCase()),
+              ) && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                  contentContainerStyle={{
+                    paddingVertical: 8,
+                    alignItems: "center",
+                  }}
+                >
+                  {uniqueCustNames
+                    .filter((n) =>
+                      n
+                        .toLowerCase()
+                        .includes(userInput.cust_name.toLowerCase()),
+                    )
+                    .map((n, i) => (
+                      <TouchableOpacity
+                        key={i}
+                        onPress={() => {
+                          setUserInput((prev) => ({
+                            ...prev,
+                            cust_name: n,
+                          }));
+                        }}
+                        style={{
+                          paddingHorizontal: 12,
+                          paddingVertical: 6,
+                          marginRight: 8,
+                          borderRadius: 16,
+                          backgroundColor: colors.card,
+                          borderWidth: 1,
+                          borderColor: colors.border,
+                        }}
+                      >
+                        <Text style={{ color: colors.text }}>{n}</Text>
+                      </TouchableOpacity>
+                    ))}
+                </ScrollView>
+              )} */}
+          {/* </View> */}
 
           {/* Total Amount */}
           <CustomInput
@@ -222,6 +286,7 @@ const AddKhataSheet = (props: SheetProps<"add-khata-sheet">) => {
             action="secondary"
             onPress={onClose}
             size="md"
+            className="rounded-lg"
             style={{ borderColor: colors.border }}
           >
             <ButtonText style={{ color: colors.text }}>Cancel</ButtonText>
@@ -235,18 +300,66 @@ const AddKhataSheet = (props: SheetProps<"add-khata-sheet">) => {
               isSaving
             }
             size="md"
+            className="rounded-lg"
             style={{ backgroundColor: colors.primary }}
           >
             {isSaving ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <ButtonText style={{ color: colors.text }}>
+              <ButtonText style={{ color: "white" }}>
                 {isEditMode ? "Update Entry" : "Save Entry"}
               </ButtonText>
             )}
           </Button>
         </HStack>
       </KeyboardAwareScrollView>
+      {isCustInputFocused && (
+        <KeyboardToolbar>
+          <KeyboardToolbar.Content style={{
+            borderRadius: 100
+          }}>
+            <ScrollView
+              horizontal
+              keyboardShouldPersistTaps="handled"
+              style={{                borderRadius: 100,
+}}
+              contentContainerStyle={{
+                gap: 5,
+                backgroundColor: colors.background,
+              }}
+            >
+              {uniqueCustNames
+                .filter((n) =>
+                  n.toLowerCase().includes(userInput.cust_name.toLowerCase()),
+                )
+                .map((n, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    onPress={() => {
+                      setUserInput((prev) => ({
+                        ...prev,
+                        cust_name: n,
+                      }));
+                    }}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      // marginRight: 8,
+                      borderRadius: 100,
+                      backgroundColor: colors.card,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                    }}
+                  >
+                    <Text style={{ color: colors.text }}>{n}</Text>
+                  </TouchableOpacity>
+                ))}
+            </ScrollView>
+          </KeyboardToolbar.Content>
+        </KeyboardToolbar>
+      )}
     </ActionSheet>
   );
 };

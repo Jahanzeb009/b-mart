@@ -14,7 +14,7 @@ const EMAIL_DOMAIN = "@bmart.com";
 
 const Profile = () => {
   const { colors } = useTheme();
-   
+
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -56,8 +56,12 @@ const Profile = () => {
 
   return (
     <>
-      <Stack.Screen options={{ title: "Profile", headerTitleAlign: "center" }} />
-      <View style={{ flex: 1, backgroundColor: colors.background, padding: 24 }}>
+      <Stack.Screen
+        options={{ title: "Profile", headerTitleAlign: "center" }}
+      />
+      <View
+        style={{ flex: 1, backgroundColor: colors.background, padding: 24 }}
+      >
         <View
           style={{
             alignItems: "center",
@@ -71,9 +75,9 @@ const Profile = () => {
           <Heading size="xl" style={{ color: colors.text, marginTop: 12 }}>
             {username ?? "—"}
           </Heading>
-          {/* <Text size="sm" style={{ color: colors.text + "80", marginTop: 4 }}>
-            {email ?? "Loading..."}
-          </Text> */}
+          <Text size="sm" style={{ color: colors.text + "80", marginTop: 4 }}>
+            v1.1
+          </Text>
         </View>
 
         <CustomButton

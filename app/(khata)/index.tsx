@@ -1,16 +1,16 @@
-import { TABLES } from "@network/contants";
-import { supabase } from "@network/supabase";
 import { deleteKhata } from "@network";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   StyleSheet,
   ActivityIndicator,
   Pressable,
   Alert,
+  RefreshControl,
   SectionList,
 } from "react-native";
-import { Stack } from "expo-router";
+import { useRealtimeTable } from "@src/hooks/useRealtimeTable";
+import { Stack, useFocusEffect } from "expo-router";
 import { useTheme } from "@react-navigation/native";
 import { CheckCheck, NotepadText, Plus, Trash2, X } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
@@ -25,100 +25,93 @@ const KhataList = () => {
   const { colors } = useTheme();
   const inset = useSafeAreaInsets();
 
-  const [khataList, setKhataList] = useState<
-    { title: string; data: KhataItemTypes[] }[]
-  >([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [custNames, setCustNames] = useState<Set<string>>(new Set());
+  // console.log(custNames);
 
-  const [sectionHeaderHeight, setSectionHeaderHeight] = useState(0);
-
-  const fetchKhataList = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from(TABLES.khata)
-        .select(
-          `*,
-    user:created_by (
-      id,
-      username
-    )
-  `,
-        )
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching khata:", error.message);
-        return;
-      }
-
-      if (!data) return;
-
-      const sortedData = data.sort((a, b) => {
-        // Step 1: sort by completion status
-        if (a.is_completed !== b.is_completed) {
-          return a.is_completed ? 1 : -1; // incomplete first
-        }
-
-        // Step 2: sort by created_at (newest first)
-        return (
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-      });
-
-      const groupedData: { [key: string]: KhataItemTypes[] } = {};
-      sortedData.forEach((item) => {
-        const dateKey = new Date(item.created_at).toDateString();
-        if (!groupedData[dateKey]) {
-          groupedData[dateKey] = [];
-        }
-        groupedData[dateKey].push(item);
-      });
-
-      const finalData = Object.keys(groupedData).map((date) => ({
-        title: date,
-        data: groupedData[date],
-      }));
-
-      setKhataList(finalData);
-      setIsLoading(false);
-    } catch (e) {
-      console.error("fetchKhataList error:", e);
-      setIsLoading(false);
-    }
-  };
+  const {
+    data: khataData,
+    lastSyncAt,
+    isSyncing,
+    refresh,
+    sync,
+    upsertRows,
+    removeRows,
+  } = useRealtimeTable<KhataItemTypes>({
+    table: "khata",
+    selectQuery: `*, 
+    created_by_user:created_by (username),
+    updated_by_user:updated_by (username)
+    `,
+  });
 
   useEffect(() => {
-    fetchKhataList();
-  }, []);
+    if (khataData.length) {
+      const names = new Set(khataData.map((k) => k.cust_name));
+      setCustNames(names);
+    }
+  }, [khataData]);
 
-  const handleRefresh = useCallback((id: string, is_completed?: boolean) => {
-    setKhataList((pre) =>
-      pre.map((section) => ({
-        ...section,
-        data: section.data
-          .map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  is_completed: is_completed ?? !item.is_completed,
-                }
-              : item,
-          )
-          .sort((a, b) => {
-            if (a.is_completed !== b.is_completed) {
-              return a.is_completed ? 1 : -1;
-            }
-            return (
-              new Date(b.created_at).getTime() -
-              new Date(a.created_at).getTime()
-            );
-          }),
-      })),
+  useFocusEffect(
+    useCallback(() => {
+      sync();
+    }, [sync]),
+  );
+
+  const [editMode, setEditMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [sectionHeaderHeight, setSectionHeaderHeight] = useState(0);
+
+  const khataList = useMemo(() => {
+    const khataSectionArr = khataData.reduce(
+      (acc, k) => {
+        const key = new Date(k.created_at).toDateString();
+        const existing = acc.find((_) => _.title === key);
+
+        if (existing) existing.data.push(k);
+        else
+          acc.push({
+            title: key,
+            data: [k],
+          });
+
+        return acc;
+      },
+      [] as Array<{
+        title: string;
+        data: KhataItemTypes[];
+      }>,
     );
-  }, []);
+
+    const sorted = khataSectionArr.map((k) => ({
+      ...k,
+      data: k.data.sort((a, b) => {
+        if (a.is_completed !== b.is_completed) return a.is_completed ? 1 : -1;
+
+        const _a = new Date(a.created_at);
+        const _b = new Date(b.created_at);
+
+        return _b.getTime() - _a.getTime();
+      }),
+    }));
+
+    sorted.sort((a, b) => {
+      const _a = new Date(a.title);
+      const _b = new Date(b.title);
+
+      return _b.getTime() - _a.getTime();
+    });
+
+    return sorted;
+  }, [khataData]);
+
+  const handleRefresh = useCallback(
+    (id: string, is_completed?: boolean) => {
+      const cur = khataData.find((i) => i.id === id);
+      if (!cur) return;
+      upsertRows([{ ...cur, is_completed: is_completed ?? !cur.is_completed }]);
+    },
+    [khataData, upsertRows],
+  );
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -162,16 +155,7 @@ const KhataList = () => {
           style: "destructive",
           onPress: async () => {
             const idsToDelete = Array.from(selectedIds);
-            setKhataList((pre) =>
-              pre
-                .map((section) => ({
-                  ...section,
-                  data: section.data.filter(
-                    (item) => !selectedIds.has(item.id),
-                  ),
-                }))
-                .filter((section) => section.data.length > 0),
-            );
+            removeRows(idsToDelete);
             setEditMode(false);
             setSelectedIds(new Set());
             await Promise.all(idsToDelete.map((id) => deleteKhata({ id })));
@@ -179,7 +163,7 @@ const KhataList = () => {
         },
       ],
     );
-  }, [selectedIds]);
+  }, [selectedIds, removeRows]);
 
   return (
     <>
@@ -243,14 +227,12 @@ const KhataList = () => {
                   gap: 8,
                 }}
               >
-                {isLoading ? <ActivityIndicator color={colors.text} /> : null}
+                {isSyncing ? <ActivityIndicator color={colors.text} /> : null}
                 <Pressable
                   onPress={() => {
                     Haptics.selectionAsync();
                     SheetManager.show("add-khata-sheet", {
-                      onClose: () => {
-                        fetchKhataList();
-                      },
+                      payload: { uniqueCustNames: Array.from(custNames) },
                     });
                   }}
                   style={styles.headerButton}
@@ -266,20 +248,36 @@ const KhataList = () => {
         style={{ flex: 1, backgroundColor: colors.background }}
         className="w-full md:w-1/2 max-w-[600] self-center"
       >
+        <View
+          style={{ paddingHorizontal: 15, paddingTop: 4, paddingBottom: 6 }}
+        >
+          <Text size="xs" style={{ color: colors.text + "70" }}>
+            {lastSyncAt
+              ? `Last updated: ${new Date(lastSyncAt).toLocaleString()}`
+              : "Not synced yet"}
+          </Text>
+        </View>
         <SectionList
           sections={khataList}
+          refreshControl={
+            <RefreshControl
+              refreshing={isSyncing}
+              onRefresh={refresh}
+              tintColor={colors.text}
+            />
+          }
           renderSectionHeader={({ section }) => {
             return (
               <>
-              <View
+                <View
                   onLayout={(e) =>
                     setSectionHeaderHeight(e.nativeEvent.layout.height)
                   }
-                style={{
-                  backgroundColor: colors.background,
-                  paddingVertical: 10,
-                }}
-              >
+                  style={{
+                    backgroundColor: colors.background,
+                    paddingVertical: 10,
+                  }}
+                >
                   <Text
                     style={{
                       color: colors.text,
@@ -287,9 +285,9 @@ const KhataList = () => {
                       fontWeight: "bold",
                     }}
                   >
-                  {section.title}
-                </Text>
-              </View>
+                    {section.title}
+                  </Text>
+                </View>
 
                 {sectionHeaderHeight > 0 && (
                   <>
@@ -339,10 +337,7 @@ const KhataList = () => {
               onPress={() => {
                 Haptics.selectionAsync();
                 SheetManager.show("add-khata-sheet", {
-                  payload: { item },
-                  onClose: () => {
-                    fetchKhataList();
-                  },
+                  payload: { item, uniqueCustNames: Array.from(custNames) },
                 });
               }}
               onRefresh={(is_completed) => handleRefresh(item.id, is_completed)}
@@ -358,7 +353,7 @@ const KhataList = () => {
         />
       </View>
 
-      {!isLoading && khataList.length === 0 ? <ListEmptyComponent /> : null}
+      {!isSyncing && khataList.length === 0 ? <ListEmptyComponent /> : null}
     </>
   );
 };

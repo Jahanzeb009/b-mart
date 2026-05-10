@@ -7,6 +7,7 @@ import {
   ScrollView,
   Pressable,
   Alert,
+  RefreshControl,
 } from "react-native";
 import React, {
   useCallback,
@@ -18,7 +19,8 @@ import React, {
 import { useTheme } from "@react-navigation/native";
 import { router, Stack, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { deleteProducts, getCategories, getProductList } from "@network";
+import { deleteProducts, getCategories } from "@network";
+import { useRealtimeTable } from "@src/hooks/useRealtimeTable";
 import { ProductRenderItem } from "@components/ProductRenderItem";
 import * as Haptics from "expo-haptics";
 import { ProductCategoryTypes, ProductTypes } from "@types";
@@ -48,6 +50,7 @@ import { Box } from "@components/ui/box";
 import { Heading } from "@components/ui/heading";
 import { Text } from "@components/ui/text";
 import { formatCurrency } from "@utils";
+import { colorScheme } from "nativewind";
 
 const options = {
   keys: ["name", "invoice", "mrp", "category_id"],
@@ -70,8 +73,23 @@ const Home = () => {
   width -= 30 + 15;
 
   const [showSearch, setShowSearch] = useState(false);
-  const [productList, setProductList] = useState<ProductTypes[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    data: productList,
+    lastSyncAt,
+    isSyncing,
+    refresh,
+    sync,
+    removeRows,
+  } = useRealtimeTable<ProductTypes>({
+    table: "products",
+    selectQuery: "*",
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      sync();
+    }, [sync]),
+  );
   const [isEditingMode, setIsEditingMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [categories, setCategories] = useState<ProductCategoryTypes[]>([]);
@@ -86,7 +104,6 @@ const Home = () => {
   const flatRef = useRef<FlatList>(null);
   const ListRef = useRef<FlashListRef<ProductTypes[]> | null>(null);
   const ScrollViewRef = useRef<ScrollView | null>(null);
-  const needsRefresh = useRef(true);
   const userScrollAction = useRef(false);
 
   const toggleSelect = (id: string) => {
@@ -103,42 +120,7 @@ const Home = () => {
     });
   };
 
-  const _getProducts = async () => {
-    try {
-      const products = await getProductList();
-      products.sort((a, b) => {
-        const _a = new Date(a.updated_at!);
-        const _b = new Date(b.updated_at!);
-
-        return _b.getTime() - _a.getTime();
-      });
-
-      // Merge with existing data to preserve references for unchanged items
-      setProductList((prev) => {
-        if (!prev.length) return products;
-
-        const prevMap = new Map(prev.map((p) => [p.id, p]));
-        let hasChanges = products.length !== prev.length;
-
-        const merged = products.map((p) => {
-          const existing = prevMap.get(p.id);
-          if (existing && existing.updated_at === p.updated_at) {
-            return existing; // preserve reference
-          }
-          hasChanges = true;
-          return p;
-        });
-
-        return hasChanges ? merged : prev;
-      });
-      setIsLoading(false);
-    } catch (e) {
-      console.log("_getProducts error ", e);
-      setIsLoading(false);
-    }
-  };
-
-  const _getCategories = async () => {
+  const _getCategories = useCallback(async () => {
     try {
       const cats = await getCategories();
       setCategories((prev) => {
@@ -146,27 +128,29 @@ const Home = () => {
         AsyncStorage.setItem("@categories", JSON.stringify(cats));
         return cats;
       });
-      setIsLoading(false);
     } catch (e) {
       console.log("_getCategories error ", e);
-      setIsLoading(false);
     }
-  };
+  }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (needsRefresh.current) {
-        needsRefresh.current = false;
-        setIsLoading(true);
-        _getProducts();
-        _getCategories();
+  useEffect(() => {
+    AsyncStorage.getItem("@categories").then((cached) => {
+      if (cached) {
+        try {
+          setCategories(JSON.parse(cached));
+        } catch {}
       }
-      // Mark for refresh when leaving the screen
-      return () => {
-        needsRefresh.current = true;
-      };
-    }, []),
-  );
+      _getCategories();
+    });
+  }, [_getCategories]);
+
+  const sortedProducts = useMemo(() => {
+    return [...productList].sort((a, b) => {
+      const _a = new Date(a.updated_at!);
+      const _b = new Date(b.updated_at!);
+      return _b.getTime() - _a.getTime();
+    });
+  }, [productList]);
 
   // Debounced search function
   const debouncedSearch = useCallback(
@@ -184,15 +168,15 @@ const Home = () => {
 
   // Re-setup fuse when productList changes
   useEffect(() => {
-    if (!productList.length) return;
-    setupFuse(productList);
-  }, [productList]);
+    if (!sortedProducts.length) return;
+    setupFuse(sortedProducts);
+  }, [sortedProducts]);
 
   // Derive filtered data with useMemo instead of state + useEffect
   const filterData = useMemo(() => {
-    if (!productList.length) return [];
+    if (!sortedProducts.length) return [];
 
-    let filtered = productList;
+    let filtered = sortedProducts;
 
     // 1. Category filter
     if (selectedCategory && selectedCategory.name !== "all") {
@@ -206,7 +190,7 @@ const Home = () => {
     }
 
     return filtered;
-  }, [queryText, selectedCategory, productList]);
+  }, [queryText, selectedCategory, sortedProducts]);
 
   // Scroll to top only on user-driven actions (search/category change), not data refresh
   useEffect(() => {
@@ -224,23 +208,15 @@ const Home = () => {
     if (isEditingMode) {
       if (!selectedIds.size) return;
       try {
-        setIsLoading(true);
-        const isDone = await deleteProducts(selectedIds);
-        console.log("isDone -> ", JSON.stringify(isDone, null, 2));
-
-        if (isDone) {
-          setIsEditingMode(false);
-          setSelectedIds(new Set());
-          needsRefresh.current = true;
-          await _getProducts();
-        }
-        setIsLoading(false);
+        const ids = Array.from(selectedIds);
+        removeRows(ids);
+        setIsEditingMode(false);
+        setSelectedIds(new Set());
+        await deleteProducts(selectedIds);
       } catch (error) {
         console.log("error deleting product", error);
-        setIsLoading(false);
       }
     } else {
-      needsRefresh.current = true;
       router.navigate({
         pathname: "/(product)/add",
         params: {
@@ -283,24 +259,19 @@ const Home = () => {
           style: "destructive",
           onPress: async () => {
             try {
-              setIsLoading(true);
-              const isDone = await deleteProducts(selectedIds);
-              if (isDone) {
-                setIsEditingMode(false);
-                setSelectedIds(new Set());
-                needsRefresh.current = true;
-                await _getProducts();
-              }
-              setIsLoading(false);
+              const ids = Array.from(selectedIds);
+              removeRows(ids);
+              setIsEditingMode(false);
+              setSelectedIds(new Set());
+              await deleteProducts(selectedIds);
             } catch (error) {
               console.log("error deleting product", error);
-              setIsLoading(false);
             }
           },
         },
       ],
     );
-  }, [selectedIds]);
+  }, [selectedIds, removeRows]);
 
   const renderProduct = useCallback(
     ({ item, index }: { item: ProductTypes; index: number }) => {
@@ -419,7 +390,7 @@ const Home = () => {
       )}
 
       {/* Stats strip */}
-      {!isLoading && totalProducts > 0 && (
+      {!isSyncing && totalProducts > 0 && (
         <Box
           className="flex-row justify-between px-4 pb-2 pt-2"
           style={{ borderTopWidth: 0 }}
@@ -437,6 +408,14 @@ const Home = () => {
           )}
         </Box>
       )}
+
+      <Box className="px-4 pb-1">
+        <Text className="text-xs" style={{ color: colors.text + "60" }}>
+          {lastSyncAt
+            ? `Last updated: ${new Date(lastSyncAt).toLocaleString()}`
+            : "Not synced yet"}
+        </Text>
+      </Box>
     </View>
   );
 
@@ -479,7 +458,7 @@ const Home = () => {
                   gap: 10,
                 }}
               >
-                {isLoading && <ActivityIndicator color={colors.text} />}
+                {isSyncing && <ActivityIndicator color={colors.text} />}
                 <Pressable onPress={handleSelectAll} style={{ padding: 5 }}>
                   <CheckCheck
                     size={22}
@@ -511,7 +490,7 @@ const Home = () => {
                   paddingRight: Platform.OS === "web" ? 20 : 5,
                 }}
               >
-                {isLoading && <ActivityIndicator color={colors.text} />}
+                {isSyncing && <ActivityIndicator color={colors.text} />}
                 <RectButton
                   style={{ borderRadius: 100 }}
                   onPress={async () => {
@@ -554,6 +533,13 @@ const Home = () => {
               keyboardShouldPersistTaps="handled"
               automaticallyAdjustKeyboardInsets
               optimizeItemArrangement
+              refreshControl={
+                <RefreshControl
+                  refreshing={isSyncing}
+                  onRefresh={refresh}
+                  tintColor={colors.text}
+                />
+              }
               contentContainerStyle={{
                 paddingBottom: 150,
                 paddingTop: 10,

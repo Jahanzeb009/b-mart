@@ -674,7 +674,7 @@ const AddProductScreen = () => {
               }}
             />
 
-            <Text>Extra Attachments</Text>
+            <Text style={{ color: colors.text }}>Extra Attachments</Text>
 
             <Box className="flex-row flex-wrap w-full">
               <Box className="p-1 w-1/4">
