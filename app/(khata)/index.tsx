@@ -19,6 +19,7 @@ import { KhataRenderItem } from "@components/Khata";
 import { KhataItemTypes } from "@types";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SheetManager } from "react-native-actions-sheet";
+import Svg, { Path } from "react-native-svg";
 
 const KhataList = () => {
   const { colors } = useTheme();
@@ -31,12 +32,21 @@ const KhataList = () => {
   const [editMode, setEditMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  const [sectionHeaderHeight, setSectionHeaderHeight] = useState(0);
+
   const fetchKhataList = async () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from(TABLES.khata)
-        .select("*")
+        .select(
+          `*,
+    user:created_by (
+      id,
+      username
+    )
+  `,
+        )
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -260,16 +270,60 @@ const KhataList = () => {
           sections={khataList}
           renderSectionHeader={({ section }) => {
             return (
+              <>
               <View
+                  onLayout={(e) =>
+                    setSectionHeaderHeight(e.nativeEvent.layout.height)
+                  }
                 style={{
                   backgroundColor: colors.background,
                   paddingVertical: 10,
                 }}
               >
-                <Text style={{ color: colors.primary, fontWeight: "bold" }}>
+                  <Text
+                    style={{
+                      color: colors.text,
+                      opacity: 0.8,
+                      fontWeight: "bold",
+                    }}
+                  >
                   {section.title}
                 </Text>
               </View>
+
+                {sectionHeaderHeight > 0 && (
+                  <>
+                    <Svg
+                      width={20}
+                      height={20}
+                      style={{
+                        position: "absolute",
+                        left: 0,
+                        top: sectionHeaderHeight,
+                      }}
+                    >
+                      <Path
+                        d="M0 0 L20 0 Q0 0 0 20 Z"
+                        fill={colors.background}
+                      />
+                    </Svg>
+                    <Svg
+                      width={20}
+                      height={20}
+                      style={{
+                        position: "absolute",
+                        right: 0,
+                        top: sectionHeaderHeight,
+                      }}
+                    >
+                      <Path
+                        d="M20 0 L0 0 Q20 0 20 20 Z"
+                        fill={colors.background}
+                      />
+                    </Svg>
+                  </>
+                )}
+              </>
             );
           }}
           stickySectionHeadersEnabled
@@ -282,12 +336,20 @@ const KhataList = () => {
               isSelected={selectedIds.has(item.id)}
               onSelect={() => toggleSelect(item.id)}
               onLongPress={() => handleEnterEditMode(item.id)}
+              onPress={() => {
+                Haptics.selectionAsync();
+                SheetManager.show("add-khata-sheet", {
+                  payload: { item },
+                  onClose: () => {
+                    fetchKhataList();
+                  },
+                });
+              }}
               onRefresh={(is_completed) => handleRefresh(item.id, is_completed)}
             />
           )}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{
-            gap: 3,
             paddingHorizontal: 15,
             paddingBottom: inset.bottom + 15,
           }}

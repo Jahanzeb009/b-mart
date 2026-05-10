@@ -42,16 +42,23 @@ interface ProductCategoryTypes {
 interface KhataItemTypes {
   id: string;
   cust_name: string;
-  description: string
+  description: string;
   created_at: string;
+  updated_at: string;
   is_completed: boolean;
+  created_by: string;
+  updated_by: string | null;
+  user?: {
+    id: string;
+    username: string;
+    email: string;
+  };
 }
-
 
 export {
   ProductTypes,
   ProductCategoryTypes,
   ProductInsertTypes,
   ProductUpdateTypes,
-  KhataItemTypes
+  KhataItemTypes,
 };

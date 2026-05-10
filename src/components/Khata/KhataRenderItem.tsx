@@ -30,6 +30,7 @@ const KhataRenderItem = ({
   onSelect,
   onLongPress,
   onRefresh,
+  onPress,
   index,
   totalCount,
 }: {
@@ -40,8 +41,11 @@ const KhataRenderItem = ({
   isSelected: boolean;
   onSelect: () => void;
   onLongPress: () => void;
+  onPress: () => void;
   onRefresh: (is_completed?: boolean) => void;
 }) => {
+  console.log(item);
+
   const [showMoreText, setShowMoreText] = useState(false);
 
   const [collapsedHeight, setCollapsedHeight] = useState(0);
@@ -54,7 +58,10 @@ const KhataRenderItem = ({
   const animatedHeight = useSharedValue(0);
   const { colors } = useTheme();
 
-  const created_at = new Date(item.created_at).toLocaleString();
+  const updated_at = new Date(item.updated_at).toLocaleString();
+  {
+    ("\n");
+  }
   const totalAmount = +calculateTotal(item.description)!;
 
   // Animate height when toggle changes
@@ -100,18 +107,19 @@ const KhataRenderItem = ({
       <Pressable
         style={{
           flex: 1,
+          marginTop: index !== 0 ? 3 : 0,
           backgroundColor: isSelected ? colors.primary + "15" : colors.card,
-          borderTopLeftRadius: index === 0 ? 20 : 5,
-          borderTopRightRadius: index === 0 ? 20 : 5,
+          borderTopLeftRadius: 5,
+          borderTopRightRadius: 5,
           borderBottomLeftRadius: index === totalCount - 1 ? 20 : 5,
-          borderBottomRightRadius: index === totalCount - 1 ? 20 :5,
+          borderBottomRightRadius: index === totalCount - 1 ? 20 : 5,
           overflow: "hidden",
         }}
         onPress={() => {
           if (editMode) {
             onSelect();
           } else {
-            setShowMoreText((pre) => !pre);
+            onPress();
           }
         }}
         onPressIn={() => (isPressed.value = true)}
@@ -218,13 +226,22 @@ const KhataRenderItem = ({
               </Animated.View>
             )}
 
-            <Text
-              selectable={false}
-              size="xs"
-              style={{ color: colors.text + "60" }}
-            >
-              {created_at}
-            </Text>
+            <HStack className="justify-between">
+              <Text
+                selectable={false}
+                size="xs"
+                style={{ color: colors.text + "99", fontStyle: "italic" }}
+              >
+                {item.user.username}
+              </Text>
+              <Text
+                selectable={false}
+                size="xs"
+                style={{ color: colors.text + "60" }}
+              >
+                {updated_at}
+              </Text>
+            </HStack>
           </VStack>
           <VStack className="items-end gap-2">
             <View
@@ -273,18 +290,29 @@ const KhataRenderItem = ({
         </HStack>
 
         {expandedHeight > collapsedHeight + 10 && Platform.OS !== "web" && (
-          <Box
-            style={{
-              backgroundColor: colors.border + "50",
-              paddingVertical: 5,
-              justifyContent: "center",
-              alignItems: "center",
+          <Pressable
+            onPress={() => {
+              if (editMode) {
+                onSelect();
+              } else {
+                setShowMoreText((pre) => !pre);
+              }
             }}
+            hitSlop={{ top: 6, bottom: 6, left: 20, right: 20 }}
           >
-            <Animated.View style={chevronAniStyle}>
-              <ChevronDown size={24} color={colors.primary + "99"} />
-            </Animated.View>
-          </Box>
+            <Box
+              style={{
+                backgroundColor: colors.border + "50",
+                paddingVertical: 5,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Animated.View style={chevronAniStyle}>
+                <ChevronDown size={24} color={colors.primary + "99"} />
+              </Animated.View>
+            </Box>
+          </Pressable>
         )}
       </Pressable>
     </Animated.View>

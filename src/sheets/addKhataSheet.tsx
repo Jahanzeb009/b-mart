@@ -1,6 +1,6 @@
 import { useTheme } from "@react-navigation/native";
-import { useRef, useState } from "react";
-import { ActivityIndicator } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Alert } from "react-native";
 import ActionSheet, {
   SheetManager,
   SheetProps,
@@ -14,11 +14,24 @@ import { calculateTotal } from "../helper";
 import { HStack } from "../components/ui/hstack";
 import { Button, ButtonText } from "../components/ui/button";
 import { sendKhataPush } from "../network/push";
-import { createKhata } from "../network";
+import { createKhata, updateKhata } from "../network";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { supabase } from "../network/supabase";
+import type { User as TUser } from "@supabase/supabase-js";
 
 const AddKhataSheet = (props: SheetProps<"add-khata-sheet">) => {
   const { colors } = useTheme();
+
+  const editingItem = props.payload?.item;
+  const isEditMode = !!editingItem;
+
+  const [user, setUser] = useState<TUser | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user ?? null);
+    });
+  }, []);
 
   const [isSaving, setIsSaving] = useState(false);
   const [userInput, setUserInput] = useState({
@@ -50,18 +63,47 @@ const AddKhataSheet = (props: SheetProps<"add-khata-sheet">) => {
 
     setIsSaving(true);
     try {
-      const result = await createKhata({
-        cust_name: userInput.cust_name.trim(),
-        description: description.trim(),
-      });
+      if (isEditMode && editingItem) {
+        if (!user?.id) {
+          Alert.alert(
+            "Authentication Error!",
+            "Session expired, Please login again!",
+          );
+          return;
+        }
 
-      if (result) {
-        sendKhataPush({
-          cust_name: result.cust_name,
-          description: result.description,
+        const result = await updateKhata({
+          id: editingItem.id,
+          cust_name: cust_name.trim(),
+          description: description.trim(),
+          updated_by: user.id,
         });
-        resetForm();
-        SheetManager.hide("add-khata-sheet");
+        if (result) {
+          resetForm();
+          SheetManager.hide("add-khata-sheet");
+        }
+      } else {
+        if (!user?.id) {
+          Alert.alert(
+            "Authentication Error!",
+            "Session expired, Please login again!",
+          );
+          return;
+        }
+
+        const result = await createKhata({
+          cust_name: cust_name.trim(),
+          description: description.trim(),
+          created_by: user.id,
+        });
+        if (result) {
+          sendKhataPush({
+            cust_name: result.cust_name,
+            description: result.description,
+          });
+          resetForm();
+          SheetManager.hide("add-khata-sheet");
+        }
       }
     } catch (e) {
       console.error("Error saving khata:", e);
@@ -96,9 +138,22 @@ const AddKhataSheet = (props: SheetProps<"add-khata-sheet">) => {
       indicatorStyle={{ backgroundColor: colors.border }}
       onClose={resetForm}
       onOpen={() => {
-        setTimeout(() => {
-          inputRefs.current.cust_name?.focus();
-        }, 100);
+        if (editingItem) {
+          setUserInput({
+            cust_name: editingItem.cust_name ?? "",
+            description: editingItem.description ?? "",
+          });
+          calculateTotal(editingItem.description ?? "", (sum) => {
+            setTotalAmount(sum);
+          });
+          setTimeout(() => {
+            inputRefs.current.cust_desc?.focus();
+          }, 100);
+        } else {
+          setTimeout(() => {
+            inputRefs.current.cust_name?.focus();
+          }, 100);
+        }
       }}
     >
       <KeyboardAwareScrollView
@@ -111,7 +166,7 @@ const AddKhataSheet = (props: SheetProps<"add-khata-sheet">) => {
           className="text-typography-950"
           style={{ color: colors.text }}
         >
-          New Khata Entry
+          {isEditMode ? "Update Khata Entry" : "New Khata Entry"}
         </Heading>
 
         <VStack className="gap-5 mt-5">
@@ -125,7 +180,7 @@ const AddKhataSheet = (props: SheetProps<"add-khata-sheet">) => {
             onChangeText={handleUserInput("cust_name")}
             returnKeyType="next"
             onSubmitEditing={() => {
-              inputRefs.current?.desc?.focus();
+              inputRefs.current?.cust_desc?.focus();
             }}
           />
 
@@ -140,7 +195,7 @@ const AddKhataSheet = (props: SheetProps<"add-khata-sheet">) => {
 
           {/* Description */}
           <CustomInput
-            ref={getRef("desc")}
+            ref={getRef("cust_desc")}
             label="Description"
             multiline
             textAlignVertical="top"
@@ -185,7 +240,9 @@ const AddKhataSheet = (props: SheetProps<"add-khata-sheet">) => {
             {isSaving ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <ButtonText style={{ color: colors.text }}>Save Entry</ButtonText>
+              <ButtonText style={{ color: colors.text }}>
+                {isEditMode ? "Update Entry" : "Save Entry"}
+              </ButtonText>
             )}
           </Button>
         </HStack>

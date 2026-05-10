@@ -180,18 +180,18 @@ const uploadProductImage = async ({
   return publicUrl;
 };
 
-export const createKhata = async ({ is_completed = false, ...item }: {
-  cust_name: string;
-  description: string;
-  is_completed?: boolean;
-}) => {
+export const createKhata = async ({
+  is_completed = false,
+  ...item
+}: Partial<Omit<KhataItemTypes, "id" | "user">>) => {
   const { data, error } = await supabase
     .from(TABLES.khata)
     .insert({
       ...item,
-      is_completed
+      is_completed,
     })
-    .select().single(); // Use .select() to return the inserted data
+    .select()
+    .single(); // Use .select() to return the inserted data
 
   if (error) {
     console.error("Error creating khata:", error.message);
@@ -203,7 +203,10 @@ export const createKhata = async ({ is_completed = false, ...item }: {
   return data;
 };
 
-export const updateKhata = async ({ id, ...item }: { id: string } & Partial<Omit<KhataItemTypes, "id" | "created_at">>) => {
+export const updateKhata = async ({
+  id,
+  ...item
+}: { id: string } & Partial<Omit<KhataItemTypes, "id" | "created_at"| 'user' | 'created_by'>>) => {
   const { data, error } = await supabase
     .from(TABLES.khata)
     .update(item)

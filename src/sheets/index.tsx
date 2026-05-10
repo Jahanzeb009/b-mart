@@ -3,7 +3,7 @@ import { SheetRegister, SheetDefinition } from "react-native-actions-sheet";
 import AddCategorySheet from "./addCategorySheet";
 import UploadedImagesSheet from "./uploadedImagesSheet";
 import ShowAllCategoriesSheet from "./showAllCategoriesSheet";
-import { ProductCategoryTypes } from "../types";
+import { KhataItemTypes, ProductCategoryTypes } from "../types";
 import ImageViewSheet from "./imageViewSheet";
 import AddKhataSheet from "./addKhataSheet";
 
@@ -23,8 +23,8 @@ declare module "react-native-actions-sheet" {
       };
     }>;
     "add-khata-sheet": SheetDefinition<{
-      payload: {
-        image: string;
+      payload?: {
+        item?: KhataItemTypes;
       };
     }>;
     "show-all-categories-sheet": SheetDefinition<{
