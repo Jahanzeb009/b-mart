@@ -12,11 +12,11 @@ import {
   ChevronUp,
   Circle,
   CircleCheckBig,
+  Undo2,
 } from "lucide-react-native";
 import { Text } from "../ui/text";
 import { formatCurrency } from "@utils";
 import { KhataItemTypes } from "@types";
-import { updateKhata } from "@network";
 import { useEffect, useState } from "react";
 import { useTheme } from "@react-navigation/native";
 import { calculateTotal } from "@helper";
@@ -29,10 +29,14 @@ const KhataRenderItem = ({
   isSelected,
   onSelect,
   onLongPress,
-  onRefresh,
   onPress,
   index,
   totalCount,
+  pendingTarget,
+  pendingStartedAt,
+  pendingDelayMs,
+  onTogglePending,
+  onCancelPending,
 }: {
   item: KhataItemTypes;
   index: number;
@@ -42,7 +46,11 @@ const KhataRenderItem = ({
   onSelect: () => void;
   onLongPress: () => void;
   onPress: () => void;
-  onRefresh: (is_completed?: boolean) => void;
+  pendingTarget?: boolean;
+  pendingStartedAt?: number;
+  pendingDelayMs: number;
+  onTogglePending: (targetValue: boolean) => void;
+  onCancelPending: () => void;
 }) => {
   const [showMoreText, setShowMoreText] = useState(false);
 
@@ -260,31 +268,30 @@ const KhataRenderItem = ({
                 {formatCurrency(totalAmount)}
               </Text>
             </View>
-            <Pressable
-              onPress={() => {
-                const { is_completed } = item;
-                onRefresh?.();
-                updateKhata({
-                  id: item.id,
-                  is_completed: !item.is_completed,
-                }).catch(() => {
-                  onRefresh?.(is_completed);
-                });
-              }}
-              style={{ padding: 5 }}
-              hitSlop={{
-                top: 10,
-                bottom: 10,
-                left: 10,
-                right: 10,
-              }}
-            >
-              {is_completed ? (
-                <CircleCheckBig color={colors.primary} />
-              ) : (
-                <Circle color={"grey"} />
-              )}
-            </Pressable>
+            {pendingTarget !== undefined && pendingStartedAt !== undefined ? (
+              <UndoPill
+                startedAt={pendingStartedAt}
+                delayMs={pendingDelayMs}
+                onPress={onCancelPending}
+              />
+            ) : (
+              <Pressable
+                onPress={() => onTogglePending(!is_completed)}
+                style={{ padding: 5 }}
+                hitSlop={{
+                  top: 10,
+                  bottom: 10,
+                  left: 10,
+                  right: 10,
+                }}
+              >
+                {is_completed ? (
+                  <CircleCheckBig color={colors.primary} />
+                ) : (
+                  <Circle color={"grey"} />
+                )}
+              </Pressable>
+            )}
           </VStack>
         </HStack>
 
@@ -315,6 +322,55 @@ const KhataRenderItem = ({
         )}
       </Pressable>
     </Animated.View>
+  );
+};
+
+const UndoPill = ({
+  startedAt,
+  delayMs,
+  onPress,
+}: {
+  startedAt: number;
+  delayMs: number;
+  onPress: () => void;
+}) => {
+  const { colors } = useTheme();
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const remaining = Math.max(
+    0,
+    Math.ceil((startedAt + delayMs - now) / 1000),
+  );
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 999,
+        backgroundColor: colors.primary + "15",
+      }}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+    >
+      <Undo2 size={14} color={colors.primary} />
+      <Text
+        selectable={false}
+        size="xs"
+        bold
+        style={{ color: colors.primary }}
+      >
+        Undo {remaining}s
+      </Text>
+    </Pressable>
   );
 };
 

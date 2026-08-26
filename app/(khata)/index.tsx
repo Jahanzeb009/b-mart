@@ -1,5 +1,11 @@
-import { deleteKhata } from "@network";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { deleteKhata, updateKhata } from "@network";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   View,
   StyleSheet,
@@ -20,6 +26,10 @@ import { KhataItemTypes } from "@types";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SheetManager } from "react-native-actions-sheet";
 import Svg, { Path } from "react-native-svg";
+
+const PENDING_TOGGLE_DELAY_MS = 15*1000; // 15 Sec
+
+type PendingToggle = { targetValue: boolean; startedAt: number };
 
 const KhataList = () => {
   const { colors } = useTheme();
@@ -51,10 +61,89 @@ const KhataList = () => {
     }
   }, [khataData]);
 
+  const pendingTimeoutsRef = useRef<
+    Map<string, ReturnType<typeof setTimeout>>
+  >(new Map());
+  const [pendingToggles, setPendingToggles] = useState<
+    Map<string, PendingToggle>
+  >(() => new Map());
+
+  const khataDataRef = useRef(khataData);
+  useEffect(() => {
+    khataDataRef.current = khataData;
+  }, [khataData]);
+
+  const pendingTogglesRef = useRef(pendingToggles);
+  useEffect(() => {
+    pendingTogglesRef.current = pendingToggles;
+  }, [pendingToggles]);
+
+  const commitToggle = useCallback(
+    async (id: string, targetValue: boolean) => {
+      pendingTimeoutsRef.current.delete(id);
+      setPendingToggles((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Map(prev);
+        next.delete(id);
+        return next;
+      });
+      const cur = khataDataRef.current.find((i) => i.id === id);
+      if (!cur || cur.is_completed === targetValue) return;
+      upsertRows([{ ...cur, is_completed: targetValue }]);
+      try {
+        await updateKhata({ id, is_completed: targetValue });
+      } catch {
+        upsertRows([{ ...cur, is_completed: !targetValue }]);
+      }
+    },
+    [upsertRows],
+  );
+
+  const handleTogglePending = useCallback(
+    (id: string, targetValue: boolean) => {
+      Haptics.selectionAsync();
+      const existing = pendingTimeoutsRef.current.get(id);
+      if (existing) clearTimeout(existing);
+      const timeoutId = setTimeout(
+        () => commitToggle(id, targetValue),
+        PENDING_TOGGLE_DELAY_MS,
+      );
+      pendingTimeoutsRef.current.set(id, timeoutId);
+      setPendingToggles((prev) => {
+        const next = new Map(prev);
+        next.set(id, { targetValue, startedAt: Date.now() });
+        return next;
+      });
+    },
+    [commitToggle],
+  );
+
+  const handleCancelPending = useCallback((id: string) => {
+    Haptics.selectionAsync();
+    const t = pendingTimeoutsRef.current.get(id);
+    if (t) clearTimeout(t);
+    pendingTimeoutsRef.current.delete(id);
+    setPendingToggles((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       sync();
-    }, [sync]),
+      return () => {
+        // Flush any pending toggles when leaving the screen so nothing silently dies.
+        const pending = pendingTogglesRef.current;
+        pending.forEach((entry, id) => {
+          const t = pendingTimeoutsRef.current.get(id);
+          if (t) clearTimeout(t);
+          commitToggle(id, entry.targetValue);
+        });
+      };
+    }, [sync, commitToggle]),
   );
 
   const [editMode, setEditMode] = useState(false);
@@ -103,15 +192,6 @@ const KhataList = () => {
 
     return sorted;
   }, [khataData]);
-
-  const handleRefresh = useCallback(
-    (id: string, is_completed?: boolean) => {
-      const cur = khataData.find((i) => i.id === id);
-      if (!cur) return;
-      upsertRows([{ ...cur, is_completed: is_completed ?? !cur.is_completed }]);
-    },
-    [khataData, upsertRows],
-  );
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -325,24 +405,33 @@ const KhataList = () => {
             );
           }}
           stickySectionHeadersEnabled
-          renderItem={({ item, index, section }) => (
-            <KhataRenderItem
-              item={item}
-              index={index}
-              totalCount={section.data.length}
-              editMode={editMode}
-              isSelected={selectedIds.has(item.id)}
-              onSelect={() => toggleSelect(item.id)}
-              onLongPress={() => handleEnterEditMode(item.id)}
-              onPress={() => {
-                Haptics.selectionAsync();
-                SheetManager.show("add-khata-sheet", {
-                  payload: { item, uniqueCustNames: Array.from(custNames) },
-                });
-              }}
-              onRefresh={(is_completed) => handleRefresh(item.id, is_completed)}
-            />
-          )}
+          renderItem={({ item, index, section }) => {
+            const pending = pendingToggles.get(item.id);
+            return (
+              <KhataRenderItem
+                item={item}
+                index={index}
+                totalCount={section.data.length}
+                editMode={editMode}
+                isSelected={selectedIds.has(item.id)}
+                onSelect={() => toggleSelect(item.id)}
+                onLongPress={() => handleEnterEditMode(item.id)}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  SheetManager.show("add-khata-sheet", {
+                    payload: { item, uniqueCustNames: Array.from(custNames) },
+                  });
+                }}
+                pendingTarget={pending?.targetValue}
+                pendingStartedAt={pending?.startedAt}
+                pendingDelayMs={PENDING_TOGGLE_DELAY_MS}
+                onTogglePending={(target) =>
+                  handleTogglePending(item.id, target)
+                }
+                onCancelPending={() => handleCancelPending(item.id)}
+              />
+            );
+          }}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{
             paddingHorizontal: 15,

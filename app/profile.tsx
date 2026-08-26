@@ -76,7 +76,7 @@ const Profile = () => {
             {username ?? "—"}
           </Heading>
           <Text size="sm" style={{ color: colors.text + "80", marginTop: 4 }}>
-            v1.1
+            v1.2
           </Text>
         </View>
 
